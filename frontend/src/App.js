@@ -4,13 +4,14 @@ import RegisterForm from './components/RegisterForm';
 import Profile from './components/Profile';
 import SearchPage from './components/SearchPage';
 import ChatPage from './components/ChatPage';
+import FineTunedChatPage from './components/FineTunedChatPage';
 import { authService } from './services/auth';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
-  const [currentPage, setCurrentPage] = useState('search'); // 'search', 'chat', or 'profile'
+  const [currentPage, setCurrentPage] = useState('search'); // 'search', 'chat', 'finetuned-chat', or 'profile'
 
   useEffect(() => {
     // Check if user is already logged in
@@ -50,13 +51,19 @@ function App() {
     setCurrentPage('chat');
   };
 
+  const navigateToFinetunedChat = () => {
+    setCurrentPage('finetuned-chat');
+  };
+
   if (isAuthenticated && user) {
     if (currentPage === 'profile') {
-      return <Profile user={user} onLogout={handleLogout} onNavigateToSearch={navigateToSearch} onNavigateToChat={navigateToChat} />;
+      return <Profile user={user} onLogout={handleLogout} onNavigateToSearch={navigateToSearch} onNavigateToChat={navigateToChat} onNavigateToFinetunedChat={navigateToFinetunedChat} />;
     } else if (currentPage === 'chat') {
-      return <ChatPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToSearch={navigateToSearch} />;
+      return <ChatPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToSearch={navigateToSearch} onNavigateToFinetunedChat={navigateToFinetunedChat} />;
+    } else if (currentPage === 'finetuned-chat') {
+      return <FineTunedChatPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToSearch={navigateToSearch} />;
     } else {
-      return <SearchPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToChat={navigateToChat} />;
+      return <SearchPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToChat={navigateToChat} onNavigateToFinetunedChat={navigateToFinetunedChat} />;
     }
   }
 

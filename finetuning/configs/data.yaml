@@ -1,0 +1,9 @@
+processed_dir: finetuning/data/processed
+outputs:
+  mode_choice: finetuning/data/processed/mode_choice.jsonl
+  sustainable_pois: finetuning/data/processed/sustainable_pois.jsonl
+splits:
+  test_size: 0.1
+  val_size: 0.1
+random_seed: 42
+

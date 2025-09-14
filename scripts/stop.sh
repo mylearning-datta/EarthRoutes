@@ -33,13 +33,39 @@ kill_port() {
   fi
 }
 
-# Stop backend (8000) and frontend (3000)
+# Stop PostgreSQL (5432), backend (8000) and frontend (3000)
 echo -e "${BLUE}🔍 Checking for running services...${NC}"
+kill_port 5432
 kill_port 8000
 kill_port 3000
 
 # Also kill any remaining processes by name
 echo -e "${BLUE}🔍 Checking for remaining processes...${NC}"
+
+# Kill PostgreSQL processes
+if pgrep -f "postgres.*-D.*db/postgres" > /dev/null; then
+    echo -e "${YELLOW}⚠️  Stopping PostgreSQL processes...${NC}"
+    # Try graceful shutdown first
+    pkill -TERM -f "postgres.*-D.*db/postgres" 2>/dev/null || true
+    sleep 3
+    # Force kill if still running
+    if pgrep -f "postgres.*-D.*db/postgres" > /dev/null; then
+        echo -e "${YELLOW}⚠️  Force stopping PostgreSQL processes...${NC}"
+        pkill -KILL -f "postgres.*-D.*db/postgres" 2>/dev/null || true
+        sleep 1
+    fi
+fi
+
+# Also kill any remaining postgres processes
+if pgrep postgres > /dev/null; then
+    echo -e "${YELLOW}⚠️  Stopping remaining PostgreSQL processes...${NC}"
+    pkill -TERM postgres 2>/dev/null || true
+    sleep 2
+    if pgrep postgres > /dev/null; then
+        echo -e "${YELLOW}⚠️  Force stopping remaining PostgreSQL processes...${NC}"
+        pkill -KILL postgres 2>/dev/null || true
+    fi
+fi
 
 # Kill Python backend processes
 if pgrep -f "python start_backend.py" > /dev/null; then
@@ -61,7 +87,7 @@ fi
 
 # Wait until ports are freed
 echo -e "${BLUE}⏳ Waiting for ports to be freed...${NC}"
-for PORT in 8000 3000; do
+for PORT in 5432 8000 3000; do
   for i in {1..10}; do
     if lsof -ti :"${PORT}" >/dev/null 2>&1; then
       sleep 0.5
@@ -75,6 +101,7 @@ echo ""
 echo -e "${GREEN}✅ All services stopped successfully!${NC}"
 echo "=================================================="
 echo -e "${BLUE}📡 Services status:${NC}"
+echo -e "   • PostgreSQL (port 5432): ${GREEN}Stopped${NC}"
 echo -e "   • Backend (port 8000): ${GREEN}Stopped${NC}"
 echo -e "   • Frontend (port 3000): ${GREEN}Stopped${NC}"
 echo ""

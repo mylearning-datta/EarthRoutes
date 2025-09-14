@@ -1,0 +1,314 @@
+{
+  "war memorial": {
+    "is_sustainable": false,
+    "reason": "Large stone structures, maintenance, high embodied CO₂"
+  },
+  "tomb": {
+    "is_sustainable": false,
+    "reason": "Stone/concrete usage, non-functional space"
+  },
+  "temple": {
+    "is_sustainable": true,
+    "reason": "Low energy usage, promotes passive and spiritual activities"
+  },
+  "theme park": {
+    "is_sustainable": false,
+    "reason": "High energy consumption from rides and lighting"
+  },
+  "observatory": {
+    "is_sustainable": false,
+    "reason": "Energy-intensive (telescopes, climate control)"
+  },
+  "market": {
+    "is_sustainable": false,
+    "reason": "Commercial activity, traffic emissions"
+  },
+  "fort": {
+    "is_sustainable": false,
+    "reason": "Large construction, stone, often crowded"
+  },
+  "stepwell": {
+    "is_sustainable": true,
+    "reason": "Historic water-saving architecture"
+  },
+  "park": {
+    "is_sustainable": true,
+    "reason": "Green space, carbon sequestration, low emissions"
+  },
+  "museum": {
+    "is_sustainable": false,
+    "reason": "High lighting, HVAC, and electronics usage"
+  },
+  "zoo": {
+    "is_sustainable": false,
+    "reason": "Animal care, energy use, artificial habitats"
+  },
+  "monument": {
+    "is_sustainable": false,
+    "reason": "Heavy tourism, maintenance emissions"
+  },
+  "science": {
+    "is_sustainable": false,
+    "reason": "Labs, displays, high electricity usage"
+  },
+  "promenade": {
+    "is_sustainable": true,
+    "reason": "Encourages walking, low infrastructure emissions"
+  },
+  "national park": {
+    "is_sustainable": true,
+    "reason": "Preserved ecosystem, promotes conservation"
+  },
+  "religious shrine": {
+    "is_sustainable": true,
+    "reason": "Low infrastructure, spiritual use"
+  },
+  "beach": {
+    "is_sustainable": false,
+    "reason": "Often over-touristed, plastic waste, transport emissions"
+  },
+  "amusement park": {
+    "is_sustainable": false,
+    "reason": "High power rides, entertainment infrastructure"
+  },
+  "palace": {
+    "is_sustainable": false,
+    "reason": "Large buildings, maintenance energy"
+  },
+  "botanical garden": {
+    "is_sustainable": true,
+    "reason": "Supports biodiversity, green space"
+  },
+  "government building": {
+    "is_sustainable": false,
+    "reason": "Often large and energy intensive"
+  },
+  "landmark": {
+    "is_sustainable": false,
+    "reason": "Heavy visitor load, maintenance, often lit up"
+  },
+  "lake": {
+    "is_sustainable": true,
+    "reason": "Natural body, passive recreation"
+  },
+  "film studio": {
+    "is_sustainable": false,
+    "reason": "High lighting and equipment energy use"
+  },
+  "tombs": {
+    "is_sustainable": false,
+    "reason": "Non-functional space, construction emissions"
+  },
+  "bridge": {
+    "is_sustainable": true,
+    "reason": "Typically pedestrian-friendly, minimal emissions"
+  },
+  "cricket ground": {
+    "is_sustainable": false,
+    "reason": "Large-scale lighting, water, crowds"
+  },
+  "site": {
+    "is_sustainable": true,
+    "reason": "Often protected or minimal infrastructure (heritage)"
+  },
+  "church": {
+    "is_sustainable": true,
+    "reason": "Spiritual, passive energy usage"
+  },
+  "waterfall": {
+    "is_sustainable": true,
+    "reason": "Natural feature, passive use"
+  },
+  "bird sanctuary": {
+    "is_sustainable": true,
+    "reason": "Conservation-focused, low emissions"
+  },
+  "historical": {
+    "is_sustainable": true,
+    "reason": "Passive tourism, low emissions if preserved"
+  },
+  "cultural": {
+    "is_sustainable": true,
+    "reason": "Typically event-based or heritage-related, manageable impact"
+  },
+  "urban development project": {
+    "is_sustainable": false,
+    "reason": "Often car-centric and energy-intensive"
+  },
+  "wildlife sanctuary": {
+    "is_sustainable": true,
+    "reason": "Ecosystem preservation, controlled tourism"
+  },
+  "shrine": {
+    "is_sustainable": true,
+    "reason": "Small scale, passive spiritual place"
+  },
+  "religious site": {
+    "is_sustainable": true,
+    "reason": "Typically passive usage, low emissions"
+  },
+  "memorial": {
+    "is_sustainable": false,
+    "reason": "Usually large structures, stone/concrete, low use"
+  },
+  "border crossing": {
+    "is_sustainable": false,
+    "reason": "High vehicular emissions, infrastructure-heavy"
+  },
+  "sculpture garden": {
+    "is_sustainable": true,
+    "reason": "Outdoor art, low emissions"
+  },
+  "scenic area": {
+    "is_sustainable": true,
+    "reason": "Minimal infrastructure, low-impact activities"
+  },
+  "viewpoint": {
+    "is_sustainable": true,
+    "reason": "Minimal infrastructure, natural attraction"
+  },
+  "mountain peak": {
+    "is_sustainable": true,
+    "reason": "Natural feature, minimal development"
+  },
+  "cave": {
+    "is_sustainable": true,
+    "reason": "Natural feature, low impact if preserved"
+  },
+  "mausoleum": {
+    "is_sustainable": false,
+    "reason": "Large construction, minimal utility, high maintenance"
+  },
+  "vineyard": {
+    "is_sustainable": true,
+    "reason": "Agricultural, carbon-sequestering"
+  },
+  "valley": {
+    "is_sustainable": true,
+    "reason": "Natural area, low infrastructure"
+  },
+  "temples": {
+    "is_sustainable": true,
+    "reason": "Low energy usage, promotes passive and spiritual activities"
+  },
+  "prehistoric site": {
+    "is_sustainable": true,
+    "reason": "Historical preservation, minimal infrastructure"
+  },
+  "scenic point": {
+    "is_sustainable": true,
+    "reason": "Low infrastructure, nature-focused"
+  },
+  "monastery": {
+    "is_sustainable": true,
+    "reason": "Low energy spiritual place"
+  },
+  "tea plantation": {
+    "is_sustainable": true,
+    "reason": "Green cover, carbon-sequestering"
+  },
+  "adventure sport": {
+    "is_sustainable": false,
+    "reason": "Often motorized (ATVs, jet skis), emission-heavy"
+  },
+  "trekking": {
+    "is_sustainable": true,
+    "reason": "Eco-tourism, minimal carbon footprint"
+  },
+  "gurudwara": {
+    "is_sustainable": true,
+    "reason": "Spiritual center, often community-led with low emissions"
+  },
+  "ski resort": {
+    "is_sustainable": false,
+    "reason": "Snow machines, heating, high travel emissions"
+  },
+  "suspension bridge": {
+    "is_sustainable": true,
+    "reason": "Pedestrian infrastructure, low maintenance emissions"
+  },
+  "ghat": {
+    "is_sustainable": true,
+    "reason": "Cultural and natural usage, low energy"
+  },
+  "orchard": {
+    "is_sustainable": true,
+    "reason": "Agriculture-based, potentially carbon neutral"
+  },
+  "confluence": {
+    "is_sustainable": true,
+    "reason": "Natural, eco-sensitive site"
+  },
+  "hill": {
+    "is_sustainable": true,
+    "reason": "Natural topography, passive tourism"
+  },
+  "gravity hill": {
+    "is_sustainable": true,
+    "reason": "Optical illusion site, minimal development"
+  },
+  "village": {
+    "is_sustainable": true,
+    "reason": "Low-density, often lower emissions per capita"
+  },
+  "sunrise point": {
+    "is_sustainable": true,
+    "reason": "Nature-based, minimal construction"
+  },
+  "dam": {
+    "is_sustainable": true,
+    "reason": "Can support renewable hydro energy"
+  },
+  "spiritual center": {
+    "is_sustainable": true,
+    "reason": "Passive use, promotes low-energy activities"
+  },
+  "aquarium": {
+    "is_sustainable": false,
+    "reason": "High energy for water regulation and lighting"
+  },
+  "religious complex": {
+    "is_sustainable": false,
+    "reason": "Mass gatherings, infrastructure load"
+  },
+  "island": {
+    "is_sustainable": false,
+    "reason": "Isolation leads to high transport and utility emissions"
+  },
+  "river island": {
+    "is_sustainable": true,
+    "reason": "Often minimally developed, natural habitat"
+  },
+  "rock carvings": {
+    "is_sustainable": true,
+    "reason": "Historic, low-energy use"
+  },
+  "township": {
+    "is_sustainable": true,
+    "reason": "May support walkability and green design"
+  },
+  "natural feature": {
+    "is_sustainable": true,
+    "reason": "Naturally sustainable, low human impact"
+  },
+  "entertainment": {
+    "is_sustainable": false,
+    "reason": "Typically energy-intensive activities"
+  },
+  "mall": {
+    "is_sustainable": false,
+    "reason": "Air conditioning, lighting, and energy-intensive retail"
+  },
+  "commercial complex": {
+    "is_sustainable": false,
+    "reason": "High energy demand, traffic generation"
+  },
+  "mosque": {
+    "is_sustainable": true,
+    "reason": "Spiritual, usually low infrastructure emissions"
+  },
+  "race track": {
+    "is_sustainable": false,
+    "reason": "Fossil fuel use, crowd emissions"
+  }
+}

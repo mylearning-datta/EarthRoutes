@@ -1,0 +1,12 @@
+{
+  "flight": 0.255,
+  "diesel_car": 0.171,
+  "petrol_car": 0.192,
+  "electric_car": 0.053,
+  "train_diesel": 0.041,
+  "bus_shared": 0.089,
+  "train_electric": 0.041,
+  "bicycle": 0.0,
+  "walking": 0.0
+}
+

@@ -5,6 +5,8 @@ from typing import List, Dict, Optional, Any
 from config.settings import settings
 import logging
 from contextlib import contextmanager
+import math
+import json
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +23,32 @@ class PostgreSQLDatabaseManager:
         }
         self.init_database()
     
+    def _json_safe(self, obj: Any) -> Any:
+        """Recursively convert pandas/NumPy NaN/inf and string 'NaN' to None for JSON safety."""
+        if isinstance(obj, list):
+            return [self._json_safe(item) for item in obj]
+        if isinstance(obj, dict):
+            return {key: self._json_safe(value) for key, value in obj.items()}
+        # Handle floats (including numpy.float types)
+        if isinstance(obj, float):
+            # math.isfinite returns False for inf, -inf, and NaN
+            if not math.isfinite(obj):
+                return None
+            # pd.isna catches pandas/NumPy NaN as well
+            if pd.isna(obj):
+                return None
+            return obj
+        # Handle pandas/NumPy NA types generically
+        try:
+            if pd.isna(obj):
+                return None
+        except Exception:
+            pass
+        # Clean string 'NaN'
+        if isinstance(obj, str) and obj.strip().lower() == 'nan':
+            return None
+        return obj
+
     @contextmanager
     def get_connection(self):
         """Get database connection with context manager"""
@@ -162,6 +190,33 @@ class PostgreSQLDatabaseManager:
                     )
                 """)
                 
+                # Create chat_sessions table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS chat_sessions (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        chat_type TEXT NOT NULL DEFAULT 'regular', -- 'regular' or 'finetuned'
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id)
+                    )
+                """)
+                
+                # Create chat_messages table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id SERIAL PRIMARY KEY,
+                        session_id INTEGER NOT NULL,
+                        message_type TEXT NOT NULL, -- 'user' or 'bot'
+                        content TEXT NOT NULL,
+                        travel_data JSONB, -- Store structured travel data if available
+                        is_error BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (session_id) REFERENCES chat_sessions (id) ON DELETE CASCADE
+                    )
+                """)
+                
                 # Create indexes for vector similarity search
                 cursor.execute("""
                     CREATE INDEX IF NOT EXISTS hotels_embedding_idx 
@@ -179,6 +234,10 @@ class PostgreSQLDatabaseManager:
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_places_sustainable ON places(is_sustainable);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_travel_data_user_id ON travel_data(user_id);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated_at ON chat_sessions(updated_at DESC);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);")
                 
                 conn.commit()
                 logger.info("✅ PostgreSQL database tables initialized successfully")
@@ -344,7 +403,14 @@ class PostgreSQLDatabaseManager:
                 LIMIT 10
                 """
                 df = pd.read_sql_query(query, conn, params=(city,))
-                return df.to_dict('records')
+                
+                # Replace NaN values with None to prevent JSON serialization errors
+                df = df.where(pd.notnull(df), None)
+                
+                # Also replace string 'NaN' values with None
+                df = df.replace('NaN', None)
+                
+                return self._json_safe(df.to_dict('records'))
         except Exception as e:
             logger.error(f"Error getting hotels: {e}")
             return []
@@ -364,7 +430,14 @@ class PostgreSQLDatabaseManager:
                 LIMIT 10
                 """
                 df = pd.read_sql_query(query, conn, params=(city,))
-                return df.to_dict('records')
+                
+                # Replace NaN values with None to prevent JSON serialization errors
+                df = df.where(pd.notnull(df), None)
+                
+                # Also replace string 'NaN' values with None
+                df = df.replace('NaN', None)
+                
+                return self._json_safe(df.to_dict('records'))
         except Exception as e:
             logger.error(f"Error getting places: {e}")
             return []
@@ -384,7 +457,14 @@ class PostgreSQLDatabaseManager:
                 LIMIT 10
                 """
                 df = pd.read_sql_query(query, conn, params=(city,))
-                return df.to_dict('records')
+                
+                # Replace NaN values with None to prevent JSON serialization errors
+                df = df.where(pd.notnull(df), None)
+                
+                # Also replace string 'NaN' values with None
+                df = df.replace('NaN', None)
+                
+                return self._json_safe(df.to_dict('records'))
         except Exception as e:
             logger.error(f"Error getting sustainable places: {e}")
             return []
@@ -470,16 +550,44 @@ class PostgreSQLDatabaseManager:
         """Search for similar hotels using vector similarity"""
         try:
             with self.get_connection() as conn:
-                query = """
-                SELECT id, name, city, rating, price_range, amenities, description,
-                       1 - (embedding <=> %s) as similarity
-                FROM hotels 
-                WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> %s
-                LIMIT %s
-                """
-                df = pd.read_sql_query(query, conn, params=(query_embedding, query_embedding, limit))
-                return df.to_dict('records')
+                # First check if any embeddings exist
+                check_query = "SELECT COUNT(*) FROM hotels WHERE embedding IS NOT NULL"
+                cursor = conn.cursor()
+                cursor.execute(check_query)
+                embedding_count = cursor.fetchone()[0]
+                
+                if embedding_count == 0:
+                    # No embeddings available, return top-rated hotels as fallback
+                    logger.warning("No embeddings available, returning top-rated hotels as fallback")
+                    fallback_query = """
+                    SELECT id, name, city, rating, price_range, amenities, description
+                    FROM hotels 
+                    WHERE rating IS NOT NULL
+                    ORDER BY rating DESC
+                    LIMIT %s
+                    """
+                    df = pd.read_sql_query(fallback_query, conn, params=(limit,))
+                else:
+                    # Use vector similarity search
+                    query = """
+                    SELECT id, name, city, rating, price_range, amenities, description,
+chat                            1 - (embedding <=> %s::vector) as similarity
+                    FROM hotels 
+                    WHERE embedding IS NOT NULL
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT %s
+                    """
+                    # Convert list to string format for vector casting
+                    embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
+                    df = pd.read_sql_query(query, conn, params=(embedding_str, embedding_str, limit))
+                
+                # Replace NaN values with None to prevent JSON serialization errors
+                df = df.where(pd.notnull(df), None)
+                
+                # Also replace string 'NaN' values with None
+                df = df.replace('NaN', None)
+                
+                return self._json_safe(df.to_dict('records'))
         except Exception as e:
             logger.error(f"Error searching similar hotels: {e}")
             return []
@@ -488,20 +596,200 @@ class PostgreSQLDatabaseManager:
         """Search for similar places using vector similarity"""
         try:
             with self.get_connection() as conn:
-                query = """
-                SELECT id, name, city, type, significance, google_review_rating,
-                       is_sustainable, sustainability_reason, description,
-                       1 - (embedding <=> %s) as similarity
-                FROM places 
-                WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> %s
-                LIMIT %s
-                """
-                df = pd.read_sql_query(query, conn, params=(query_embedding, query_embedding, limit))
-                return df.to_dict('records')
+                # First check if any embeddings exist
+                check_query = "SELECT COUNT(*) FROM places WHERE embedding IS NOT NULL"
+                cursor = conn.cursor()
+                cursor.execute(check_query)
+                embedding_count = cursor.fetchone()[0]
+                
+                if embedding_count == 0:
+                    # No embeddings available, return top-rated places as fallback
+                    logger.warning("No embeddings available, returning top-rated places as fallback")
+                    fallback_query = """
+                    SELECT id, name, city, type, significance, google_review_rating,
+                           is_sustainable, sustainability_reason, description
+                    FROM places 
+                    WHERE google_review_rating IS NOT NULL
+                    ORDER BY google_review_rating DESC
+                    LIMIT %s
+                    """
+                    df = pd.read_sql_query(fallback_query, conn, params=(limit,))
+                else:
+                    # Use vector similarity search
+                    query = """
+                    SELECT id, name, city, type, significance, google_review_rating,
+                           is_sustainable, sustainability_reason, description,
+                           1 - (embedding <=> %s::vector) as similarity
+                    FROM places 
+                    WHERE embedding IS NOT NULL
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT %s
+                    """
+                    # Convert list to string format for vector casting
+                    embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
+                    df = pd.read_sql_query(query, conn, params=(embedding_str, embedding_str, limit))
+                
+                # Replace NaN values with None to prevent JSON serialization errors
+                df = df.where(pd.notnull(df), None)
+                
+                # Also replace string 'NaN' values with None
+                df = df.replace('NaN', None)
+                
+                return self._json_safe(df.to_dict('records'))
         except Exception as e:
             logger.error(f"Error searching similar places: {e}")
             return []
+    
+    # Chat History Management Methods
+    def create_chat_session(self, user_id: int, title: str, chat_type: str = 'regular') -> int:
+        """Create a new chat session and return session ID"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO chat_sessions (user_id, title, chat_type) VALUES (%s, %s, %s) RETURNING id",
+                    (user_id, title, chat_type)
+                )
+                session_id = cursor.fetchone()[0]
+                conn.commit()
+                return session_id
+        except Exception as e:
+            logger.error(f"Error creating chat session: {e}")
+            raise
+    
+    def add_chat_message(self, session_id: int, message_type: str, content: str, 
+                        travel_data: Optional[Dict] = None, is_error: bool = False) -> int:
+        """Add a message to a chat session and return message ID"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Convert travel_data to JSON string if provided
+                travel_data_json = json.dumps(travel_data) if travel_data else None
+                
+                cursor.execute(
+                    "INSERT INTO chat_messages (session_id, message_type, content, travel_data, is_error) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                    (session_id, message_type, content, travel_data_json, is_error)
+                )
+                message_id = cursor.fetchone()[0]
+                
+                # Update session's updated_at timestamp
+                cursor.execute(
+                    "UPDATE chat_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                    (session_id,)
+                )
+                
+                conn.commit()
+                return message_id
+        except Exception as e:
+            logger.error(f"Error adding chat message: {e}")
+            raise
+    
+    def get_user_chat_sessions(self, user_id: int, limit: int = 50) -> List[Dict]:
+        """Get all chat sessions for a user, ordered by most recent"""
+        try:
+            with self.get_connection() as conn:
+                query = """
+                SELECT id, title, chat_type, created_at, updated_at,
+                       (SELECT COUNT(*) FROM chat_messages WHERE session_id = chat_sessions.id) as message_count
+                FROM chat_sessions 
+                WHERE user_id = %s 
+                ORDER BY updated_at DESC 
+                LIMIT %s
+                """
+                df = pd.read_sql_query(query, conn, params=(user_id, limit))
+                
+                # Replace NaN values with None
+                df = df.where(pd.notnull(df), None)
+                
+                return self._json_safe(df.to_dict('records'))
+        except Exception as e:
+            logger.error(f"Error getting user chat sessions: {e}")
+            return []
+    
+    def get_chat_session_messages(self, session_id: int, user_id: int) -> List[Dict]:
+        """Get all messages for a specific chat session"""
+        try:
+            with self.get_connection() as conn:
+                # First verify the session belongs to the user
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s",
+                    (session_id, user_id)
+                )
+                if not cursor.fetchone():
+                    raise ValueError("Session not found or access denied")
+                
+                query = """
+                SELECT id, message_type, content, travel_data, is_error, created_at
+                FROM chat_messages 
+                WHERE session_id = %s 
+                ORDER BY created_at ASC
+                """
+                df = pd.read_sql_query(query, conn, params=(session_id,))
+                
+                # Replace NaN values with None
+                df = df.where(pd.notnull(df), None)
+                
+                # Parse travel_data JSON if it exists
+                messages = self._json_safe(df.to_dict('records'))
+                for message in messages:
+                    if message.get('travel_data'):
+                        try:
+                            message['travel_data'] = json.loads(message['travel_data'])
+                        except (json.JSONDecodeError, TypeError):
+                            message['travel_data'] = None
+                
+                return messages
+        except Exception as e:
+            logger.error(f"Error getting chat session messages: {e}")
+            return []
+    
+    def delete_chat_session(self, session_id: int, user_id: int) -> bool:
+        """Delete a chat session and all its messages"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Verify the session belongs to the user
+                cursor.execute(
+                    "SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s",
+                    (session_id, user_id)
+                )
+                if not cursor.fetchone():
+                    return False
+                
+                # Delete the session (messages will be deleted due to CASCADE)
+                cursor.execute("DELETE FROM chat_sessions WHERE id = %s", (session_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error deleting chat session: {e}")
+            return False
+    
+    def update_chat_session_title(self, session_id: int, user_id: int, new_title: str) -> bool:
+        """Update the title of a chat session"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Verify the session belongs to the user
+                cursor.execute(
+                    "SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s",
+                    (session_id, user_id)
+                )
+                if not cursor.fetchone():
+                    return False
+                
+                cursor.execute(
+                    "UPDATE chat_sessions SET title = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                    (new_title, session_id)
+                )
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error updating chat session title: {e}")
+            return False
 
 # Global database manager instance
 postgres_db_manager = PostgreSQLDatabaseManager()

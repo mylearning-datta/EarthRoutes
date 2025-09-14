@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Travel Planning Application Startup Script
-# This script starts the backend and frontend services
+# This script starts PostgreSQL, backend and frontend services
 
 echo "🚀 Starting Travel Planning Application..."
 echo "=================================================="
@@ -13,13 +13,17 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Get the project directory
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+POSTGRES_DATA_DIR="$PROJECT_DIR/db/postgres"
+
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Add common Node.js paths to PATH
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+# Add common Node.js and PostgreSQL paths to PATH
+export PATH="/opt/homebrew/bin:/usr/local/bin:/opt/homebrew/opt/postgresql@14/bin:$PATH"
 
 # Function to check if a port is in use
 port_in_use() {
@@ -45,12 +49,54 @@ fi
 echo -e "${GREEN}✅ Python found: $(python3 --version)${NC}"
 
 # Check if ports are available
+if port_in_use 5432; then
+    echo -e "${YELLOW}⚠️  Port 5432 is already in use. PostgreSQL may already be running.${NC}"
+fi
+
 if port_in_use 8000; then
     echo -e "${YELLOW}⚠️  Port 8000 is already in use. Backend may already be running.${NC}"
 fi
 
 if port_in_use 3000; then
     echo -e "${YELLOW}⚠️  Port 3000 is already in use. Frontend may already be running.${NC}"
+fi
+
+echo ""
+echo -e "${BLUE}🗄️  Starting PostgreSQL...${NC}"
+
+# Check if PostgreSQL data directory exists
+if [ ! -d "$POSTGRES_DATA_DIR" ]; then
+    echo -e "${RED}❌ PostgreSQL data directory not found: $POSTGRES_DATA_DIR${NC}"
+    echo -e "${YELLOW}💡 Please run setup_postgres.sh first${NC}"
+    exit 1
+fi
+
+# Check if PostgreSQL is already running
+if pgrep -f "postgres.*-D.*db/postgres" > /dev/null; then
+    echo -e "${YELLOW}⚠️  PostgreSQL is already running with our data directory${NC}"
+    echo -e "${GREEN}✅ Using existing PostgreSQL instance${NC}"
+else
+    # Start PostgreSQL with custom data directory
+    echo -e "${GREEN}🔄 Starting PostgreSQL server...${NC}"
+    postgres -D "$POSTGRES_DATA_DIR" -c config_file="$POSTGRES_DATA_DIR/postgresql.conf" &
+    POSTGRES_PID=$!
+    
+    # Wait a moment for PostgreSQL to start
+    sleep 3
+    
+    # Check if PostgreSQL started successfully
+    if pgrep -x "postgres" > /dev/null; then
+        echo -e "${GREEN}✅ PostgreSQL started successfully!${NC}"
+        echo -e "${BLUE}📋 PostgreSQL connection details:${NC}"
+        echo -e "   • Host: localhost"
+        echo -e "   • Port: 5432"
+        echo -e "   • Database: travel_data"
+        echo -e "   • Username: postgres"
+        echo -e "   • Password: password"
+    else
+        echo -e "${RED}❌ Failed to start PostgreSQL${NC}"
+        exit 1
+    fi
 fi
 
 echo ""
@@ -90,6 +136,9 @@ echo -e "${BLUE}🎯 Starting services...${NC}"
 # Function to cleanup background processes
 cleanup() {
     echo -e "\n${YELLOW}🛑 Shutting down services...${NC}"
+    if [ ! -z "$POSTGRES_PID" ]; then
+        kill $POSTGRES_PID 2>/dev/null
+    fi
     if [ ! -z "$BACKEND_PID" ]; then
         kill $BACKEND_PID 2>/dev/null
     fi
@@ -145,6 +194,7 @@ echo ""
 echo -e "${GREEN}🎉 Application started successfully!${NC}"
 echo "=================================================="
 echo -e "${BLUE}📡 Services running:${NC}"
+echo -e "   • PostgreSQL: ${GREEN}localhost:5432${NC}"
 echo -e "   • Backend: ${GREEN}http://localhost:8000${NC}"
 echo -e "   • Frontend: ${GREEN}http://localhost:3000${NC}"
 echo ""

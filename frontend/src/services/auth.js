@@ -216,14 +216,82 @@ export const authService = {
   // Chat Services
 
   // Send message to travel assistant
-  sendChatMessage: async (message) => {
+  sendChatMessage: async (message, sessionId = null) => {
     try {
       const response = await api.post('/api/chat', {
-        message
+        message,
+        session_id: sessionId
       });
       return response.data;
     } catch (error) {
       throw error.response?.data || { error: 'Failed to send message' };
+    }
+  },
+
+  // Send message to fine-tuned model
+  sendFinetunedChatMessage: async (message, sessionId = null) => {
+    try {
+      const response = await api.post('/api/chat/finetuned', {
+        message,
+        session_id: sessionId
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to send message to fine-tuned model' };
+    }
+  },
+
+  // Get fine-tuned model status
+  getFinetunedModelStatus: async () => {
+    try {
+      const response = await api.get('/api/chat/finetuned/status');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to get model status' };
+    }
+  },
+
+  // Chat History Services
+
+  // Get all chat sessions for the current user
+  getChatSessions: async () => {
+    try {
+      const response = await api.get('/api/chat/sessions');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to get chat sessions' };
+    }
+  },
+
+  // Get messages for a specific chat session
+  getChatSessionMessages: async (sessionId) => {
+    try {
+      const response = await api.get(`/api/chat/sessions/${sessionId}/messages`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to get chat messages' };
+    }
+  },
+
+  // Delete a chat session
+  deleteChatSession: async (sessionId) => {
+    try {
+      const response = await api.delete(`/api/chat/sessions/${sessionId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to delete chat session' };
+    }
+  },
+
+  // Update chat session title
+  updateChatSessionTitle: async (sessionId, newTitle) => {
+    try {
+      const response = await api.put(`/api/chat/sessions/${sessionId}/title`, {
+        title: newTitle
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to update chat session title' };
     }
   }
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/auth';
 
-const Profile = ({ user, onLogout, onNavigateToSearch, onNavigateToChat }) => {
+const Profile = ({ user, onLogout, onNavigateToSearch, onNavigateToChat, onNavigateToFinetunedChat }) => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -69,6 +69,9 @@ const Profile = ({ user, onLogout, onNavigateToSearch, onNavigateToChat }) => {
           </button>
           <button onClick={onNavigateToChat} className="chat-btn">
             Chat Assistant
+          </button>
+          <button onClick={onNavigateToFinetunedChat} className="finetuned-chat-btn">
+            Fine-Tuned LLM
           </button>
           <button onClick={handleLogout} className="logout-btn">
             Logout

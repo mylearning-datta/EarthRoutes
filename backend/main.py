@@ -26,6 +26,9 @@ from workflows.advanced_react_agent import process_travel_query_advanced_react
 from config.settings import settings
 from services.google_maps import GoogleMapsService
 from services.co2_service import CO2EmissionService
+from services.semantic_search_service import semantic_search_service
+from services.batch_embedding_service import batch_embedding_service
+from services.finetuned_model_service import get_finetuned_model_service
 
 # Create FastAPI app
 app = FastAPI(
@@ -83,6 +86,7 @@ class CO2SavingsRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: Optional[int] = None
 
 class ChatResponse(BaseModel):
     success: bool
@@ -90,6 +94,19 @@ class ChatResponse(BaseModel):
     travel_data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     intermediate_steps: Optional[List[Dict]] = None
+    session_id: Optional[int] = None
+
+class ChatSessionRequest(BaseModel):
+    title: str
+    chat_type: str = 'regular'
+
+class ChatSessionResponse(BaseModel):
+    id: int
+    title: str
+    chat_type: str
+    created_at: str
+    updated_at: str
+    message_count: int
 
 # Database functions
 def get_db_connection():
@@ -170,7 +187,7 @@ def create_user(username: str, password: str, email: str = None) -> Dict:
     
     try:
         cursor.execute(
-            "INSERT INTO users (username, password, email) VALUES (%s, %s, %s) RETURNING id",
+            "INSERT INTO users (username, password_hash, email) VALUES (%s, %s, %s) RETURNING id",
             (username, hashed_password, email)
         )
         user_id = cursor.fetchone()[0]
@@ -200,8 +217,8 @@ def find_user_by_username(username: str) -> Optional[Dict]:
         return {
             "id": row[0],
             "username": row[1],
-            "password": row[2],
-            "email": row[3],
+            "email": row[2],
+            "password_hash": row[3],
             "created_at": row[4]
         }
     return None
@@ -219,8 +236,8 @@ def find_user_by_id(user_id: int) -> Optional[Dict]:
         return {
             "id": row[0],
             "username": row[1],
-            "password": row[2],
-            "email": row[3],
+            "email": row[2],
+            "password_hash": row[3],
             "created_at": row[4]
         }
     return None
@@ -243,6 +260,30 @@ def verify_jwt_token(token: str) -> Dict:
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def generate_chat_title(user_message: str) -> str:
+    """Generate a title for a chat session based on the user's first message"""
+    # Clean and truncate the message
+    clean_message = user_message.strip()
+    if len(clean_message) > 50:
+        clean_message = clean_message[:47] + "..."
+    
+    # Add emoji based on content
+    message_lower = clean_message.lower()
+    if any(word in message_lower for word in ['travel', 'trip', 'journey', 'visit']):
+        emoji = "✈️"
+    elif any(word in message_lower for word in ['hotel', 'accommodation', 'stay']):
+        emoji = "🏨"
+    elif any(word in message_lower for word in ['place', 'attraction', 'sightseeing']):
+        emoji = "📍"
+    elif any(word in message_lower for word in ['co2', 'emission', 'carbon', 'sustainable']):
+        emoji = "🌱"
+    elif any(word in message_lower for word in ['distance', 'route', 'way']):
+        emoji = "🗺️"
+    else:
+        emoji = "💬"
+    
+    return f"{emoji} {clean_message}"
 
 # Authentication dependency
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -443,7 +484,7 @@ async def login_user(login_data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Verify password
-    if not verify_password(login_data.password, user["password"]):
+    if not verify_password(login_data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Generate JWT token
@@ -585,13 +626,30 @@ async def get_emission_factors():
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_with_agent(
-    chat_request: ChatRequest
+    chat_request: ChatRequest,
+    current_user: Dict = Depends(get_current_user)
 ):
     """Chat with the AI travel planning agent"""
     if not chat_request.message or not chat_request.message.strip():
         raise HTTPException(status_code=400, detail="Message is required")
     
     try:
+        from utils.postgres_database import postgres_db_manager
+        
+        # Get or create session
+        session_id = chat_request.session_id
+        if not session_id:
+            # Create new session with generated title
+            title = generate_chat_title(chat_request.message)
+            session_id = postgres_db_manager.create_chat_session(
+                current_user["id"], title, "regular"
+            )
+        
+        # Add user message to session
+        postgres_db_manager.add_chat_message(
+            session_id, "user", chat_request.message.strip()
+        )
+        
         # Process the query through the ReAct travel agent
         result = process_travel_query_advanced_react(chat_request.message)
         
@@ -605,20 +663,101 @@ async def chat_with_agent(
                 if isinstance(step, tuple) and len(step) >= 2
             ]
         
+        # Add bot response to session
+        postgres_db_manager.add_chat_message(
+            session_id, "bot", result["response"], 
+            result.get("travel_data"), result.get("error") is not None
+        )
+        
         return ChatResponse(
             success=True,
             response=result["response"],
             travel_data=result["travel_data"],
             error=result["error"],
-            intermediate_steps=intermediate_steps
+            intermediate_steps=intermediate_steps,
+            session_id=session_id
         )
     
     except Exception as e:
         return ChatResponse(
             success=False,
             response=f"I'm sorry, I encountered an error: {str(e)}. Please try again.",
-            error=str(e)
+            error=str(e),
+            session_id=session_id
         )
+
+@app.post("/api/chat/finetuned", response_model=ChatResponse)
+async def chat_with_finetuned_model(
+    chat_request: ChatRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Chat with the fine-tuned travel sustainability model"""
+    if not chat_request.message or not chat_request.message.strip():
+        raise HTTPException(status_code=400, detail="Message is required")
+    
+    try:
+        from utils.postgres_database import postgres_db_manager
+        
+        # Get or create session
+        session_id = chat_request.session_id
+        if not session_id:
+            # Create new session with generated title
+            title = generate_chat_title(chat_request.message)
+            session_id = postgres_db_manager.create_chat_session(
+                current_user["id"], title, "finetuned"
+            )
+        
+        # Add user message to session
+        postgres_db_manager.add_chat_message(
+            session_id, "user", chat_request.message.strip()
+        )
+        
+        # Get the fine-tuned model service
+        model_service = get_finetuned_model_service()
+        
+        # Get prediction from the fine-tuned model
+        result = model_service.predict(chat_request.message.strip())
+        
+        # Add bot response to session
+        postgres_db_manager.add_chat_message(
+            session_id, "bot", result["response"], 
+            None, not result["success"]
+        )
+        
+        return ChatResponse(
+            success=result["success"],
+            response=result["response"],
+            travel_data=None,  # Fine-tuned model doesn't provide structured travel data
+            error=result.get("error"),
+            intermediate_steps=None,
+            session_id=session_id
+        )
+    
+    except Exception as e:
+        return ChatResponse(
+            success=False,
+            response=f"I'm sorry, I encountered an error: {str(e)}. Please try again.",
+            error=str(e),
+            session_id=session_id
+        )
+
+@app.get("/api/chat/finetuned/status")
+async def get_finetuned_model_status():
+    """Get the status of the fine-tuned model"""
+    try:
+        model_service = get_finetuned_model_service()
+        status = model_service.get_model_status()
+        
+        return {
+            "success": True,
+            "data": status
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 # Additional endpoints for cities and travel data
 @app.get("/api/cities")
@@ -685,6 +824,299 @@ async def get_all_cities(current_user: Dict = Depends(get_current_user)):
             "hotelCities": [],
             "placeCities": [],
             "commonCities": settings.MAJOR_CITIES,
+            "error": str(e)
+        }
+
+# Semantic Search Endpoints
+@app.post("/api/search/places/semantic")
+async def search_places_semantic(
+    query: str,
+    city: Optional[str] = None,
+    limit: int = 10,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Search places using natural language queries with AI-powered semantic matching"""
+    try:
+        result = semantic_search_service.search_places_natural_language(query, city, limit)
+        return {
+            "success": True,
+            "query": query,
+            "city_filter": city,
+            "results": result.get("results", []),
+            "total_results": result.get("total_results", 0),
+            "search_type": "semantic"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "query": query
+        }
+
+@app.post("/api/search/hotels/semantic")
+async def search_hotels_semantic(
+    query: str,
+    city: Optional[str] = None,
+    limit: int = 10,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Search hotels using natural language queries with AI-powered semantic matching"""
+    try:
+        result = semantic_search_service.search_hotels_natural_language(query, city, limit)
+        return {
+            "success": True,
+            "query": query,
+            "city_filter": city,
+            "results": result.get("results", []),
+            "total_results": result.get("total_results", 0),
+            "search_type": "semantic"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "query": query
+        }
+
+@app.post("/api/search/unified")
+async def search_unified_semantic(
+    query: str,
+    city: Optional[str] = None,
+    limit: int = 10,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Unified semantic search across both places and hotels"""
+    try:
+        result = semantic_search_service.search_unified(query, city, limit)
+        return {
+            "success": True,
+            "query": query,
+            "city_filter": city,
+            "places": result.get("places", []),
+            "hotels": result.get("hotels", []),
+            "combined_ranking": result.get("combined_ranking", []),
+            "total_places": result.get("total_places", 0),
+            "total_hotels": result.get("total_hotels", 0),
+            "search_type": "unified_semantic"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "query": query
+        }
+
+# Enhanced Travel Analysis Endpoint
+@app.post("/api/travel/analyze-enhanced")
+async def analyze_travel_enhanced(
+    source: str,
+    destination: str,
+    preferences: Optional[Dict] = None,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Enhanced travel analysis with AI-powered semantic ranking and recommendations"""
+    try:
+        # Get travel data using existing tools
+        from tools.travel_tools import travel_tools
+        travel_data = travel_tools.get_travel_suggestions(source, destination)
+        
+        # Use enhanced analysis from the advanced react agent
+        from workflows.advanced_react_agent import AdvancedTravelPlanningTool
+        tool = AdvancedTravelPlanningTool()
+        
+        # Create analysis with enhanced AI features
+        analysis = tool._analyze_travel_options(travel_data, preferences or {})
+        
+        return {
+            "success": True,
+            "source": source,
+            "destination": destination,
+            "travel_data": travel_data,
+            "analysis": analysis,
+            "preferences": preferences,
+            "analysis_type": "enhanced_ai"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "source": source,
+            "destination": destination
+        }
+
+# Batch Embedding Management Endpoints
+@app.post("/api/embeddings/batch/places")
+async def start_places_batch_embeddings(current_user: Dict = Depends(get_current_user)):
+    """Start batch embedding generation for places"""
+    try:
+        from scripts.populate_embeddings_batch import populate_place_embeddings_batch
+        result = populate_place_embeddings_batch()
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.post("/api/embeddings/batch/hotels")
+async def start_hotels_batch_embeddings(current_user: Dict = Depends(get_current_user)):
+    """Start batch embedding generation for hotels"""
+    try:
+        from scripts.populate_embeddings_batch import populate_hotel_embeddings_batch
+        result = populate_hotel_embeddings_batch()
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/embeddings/batch/status/{batch_id}")
+async def get_batch_job_status(batch_id: str, current_user: Dict = Depends(get_current_user)):
+    """Get status of a batch embedding job"""
+    try:
+        status = batch_embedding_service.get_batch_job_status(batch_id)
+        return status
+    except Exception as e:
+        return {
+            "error": str(e),
+            "batch_id": batch_id
+        }
+
+@app.post("/api/embeddings/batch/cancel/{batch_id}")
+async def cancel_batch_job(batch_id: str, current_user: Dict = Depends(get_current_user)):
+    """Cancel a batch embedding job"""
+    try:
+        result = batch_embedding_service.cancel_batch_job(batch_id)
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "batch_id": batch_id
+        }
+
+@app.get("/api/embeddings/stats")
+async def get_embedding_stats(current_user: Dict = Depends(get_current_user)):
+    """Get statistics about embeddings in the database"""
+    try:
+        with postgres_db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Get places stats
+            cursor.execute("SELECT COUNT(*) as total, COUNT(embedding) as with_embeddings FROM places")
+            places_stats = cursor.fetchone()
+            
+            # Get hotels stats
+            cursor.execute("SELECT COUNT(*) as total, COUNT(embedding) as with_embeddings FROM hotels")
+            hotels_stats = cursor.fetchone()
+            
+            return {
+                "success": True,
+                "places": {
+                    "total": places_stats[0],
+                    "with_embeddings": places_stats[1],
+                    "percentage": round((places_stats[1] / places_stats[0]) * 100, 2) if places_stats[0] > 0 else 0
+                },
+                "hotels": {
+                    "total": hotels_stats[0],
+                    "with_embeddings": hotels_stats[1],
+                    "percentage": round((hotels_stats[1] / hotels_stats[0]) * 100, 2) if hotels_stats[0] > 0 else 0
+                }
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+# Chat History Management Endpoints
+@app.get("/api/chat/sessions")
+async def get_chat_sessions(current_user: Dict = Depends(get_current_user)):
+    """Get all chat sessions for the current user"""
+    try:
+        from utils.postgres_database import postgres_db_manager
+        sessions = postgres_db_manager.get_user_chat_sessions(current_user["id"])
+        return {
+            "success": True,
+            "sessions": sessions
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/chat/sessions/{session_id}/messages")
+async def get_chat_session_messages(
+    session_id: int, 
+    current_user: Dict = Depends(get_current_user)
+):
+    """Get all messages for a specific chat session"""
+    try:
+        from utils.postgres_database import postgres_db_manager
+        messages = postgres_db_manager.get_chat_session_messages(session_id, current_user["id"])
+        return {
+            "success": True,
+            "session_id": session_id,
+            "messages": messages
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.delete("/api/chat/sessions/{session_id}")
+async def delete_chat_session(
+    session_id: int, 
+    current_user: Dict = Depends(get_current_user)
+):
+    """Delete a chat session and all its messages"""
+    try:
+        from utils.postgres_database import postgres_db_manager
+        success = postgres_db_manager.delete_chat_session(session_id, current_user["id"])
+        if success:
+            return {
+                "success": True,
+                "message": "Chat session deleted successfully"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Session not found or access denied")
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.put("/api/chat/sessions/{session_id}/title")
+async def update_chat_session_title(
+    session_id: int,
+    title_data: Dict[str, str],
+    current_user: Dict = Depends(get_current_user)
+):
+    """Update the title of a chat session"""
+    try:
+        from utils.postgres_database import postgres_db_manager
+        new_title = title_data.get("title")
+        if not new_title:
+            raise HTTPException(status_code=400, detail="Title is required")
+        
+        success = postgres_db_manager.update_chat_session_title(
+            session_id, current_user["id"], new_title
+        )
+        if success:
+            return {
+                "success": True,
+                "message": "Chat session title updated successfully"
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Session not found or access denied")
+    except Exception as e:
+        return {
+            "success": False,
             "error": str(e)
         }
 

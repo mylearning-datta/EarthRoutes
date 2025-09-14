@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { authService } from '../services/auth';
+import ChatHistorySidebar from './ChatHistorySidebar';
 
-const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
+const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch, onNavigateToFinetunedChat }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -13,6 +14,8 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -49,7 +52,12 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
     setError('');
 
     try {
-      const response = await authService.sendChatMessage(inputMessage.trim());
+      const response = await authService.sendChatMessage(inputMessage.trim(), currentSessionId);
+      
+      // Update current session ID if this is a new session
+      if (response.session_id && !currentSessionId) {
+        setCurrentSessionId(response.session_id);
+      }
       
       const botMessage = {
         id: Date.now() + 1,
@@ -60,6 +68,9 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
       };
 
       setMessages(prev => [...prev, botMessage]);
+      
+      // Trigger history refresh to show the new session/message
+      setHistoryRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Chat error:', err);
       const errorMessage = {
@@ -86,6 +97,33 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
   const handleLogout = () => {
     authService.logout();
     onLogout();
+  };
+
+  const handleLoadSession = (sessionMessages, sessionId) => {
+    // Convert session messages to the format expected by the component
+    const formattedMessages = sessionMessages.map(msg => ({
+      id: msg.id,
+      type: msg.message_type,
+      content: msg.content,
+      timestamp: new Date(msg.created_at),
+      travelData: msg.travel_data || null,
+      isError: msg.is_error || false
+    }));
+    
+    setMessages(formattedMessages);
+    setCurrentSessionId(sessionId);
+  };
+
+  const handleNewChat = () => {
+    setMessages([
+      {
+        id: 1,
+        type: 'bot',
+        content: 'Hello! I\'m your travel planning assistant. I can help you find the best travel options between cities, calculate CO₂ emissions, and suggest eco-friendly alternatives. How can I help you today?',
+        timestamp: new Date()
+      }
+    ]);
+    setCurrentSessionId(null);
   };
 
   const formatMessage = (content) => {
@@ -143,7 +181,7 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
             </div>
             <div className="places-list">
               {travelData.places.slice(0, 8).map((place, index) => (
-                <div key={index} className={`place-item ${place.is_sustainable === 1 ? 'sustainable' : 'regular'}`}>
+                <div key={index} className={`place-item ${(place.is_sustainable === 1 || place.is_sustainable === true) ? 'sustainable' : 'regular'}`}>
                   <div className="place-header">
                     <span className="place-name">{place.name}</span>
                     <div className="place-badges">
@@ -153,7 +191,7 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
                           <span className="review-count"> ({place.google_reviews_lakhs}L reviews)</span>
                         )}
                       </span>
-                      {place.is_sustainable === 1 && <span className="eco-badge">🌿 Eco-Friendly</span>}
+                      {(place.is_sustainable === 1 || place.is_sustainable === true) && <span className="eco-badge">🌿 Eco-Friendly</span>}
                     </div>
                   </div>
                   <div className="place-details">
@@ -161,7 +199,7 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
                     {place.establishment_year && (
                       <span className="establishment-year">Est. {place.establishment_year}</span>
                     )}
-                    {place.is_sustainable === 1 && place.sustainability_reason && (
+                    {(place.is_sustainable === 1 || place.is_sustainable === true) && place.sustainability_reason && (
                       <span className="sustainability-reason">{place.sustainability_reason}</span>
                     )}
                   </div>
@@ -225,10 +263,15 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
     <div className="container">
       <div className="chat-page">
         <div className="chat-header">
-          <h2>Travel Assistant Chat</h2>
+          <div className="header-left">
+            <h2>Travel Assistant Chat</h2>
+          </div>
           <div className="header-actions">
             <button onClick={onNavigateToSearch} className="search-btn">
               Travel Search
+            </button>
+            <button onClick={onNavigateToFinetunedChat} className="finetuned-chat-btn">
+              Fine-Tuned LLM
             </button>
             <button onClick={onNavigateToProfile} className="profile-btn">
               Profile
@@ -269,30 +312,30 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
             
             <div ref={messagesEndRef} />
           </div>
-
-          <form onSubmit={handleSubmit} className="chat-input-form">
-            {error && <div className="error">{error}</div>}
-            
-            <div className="input-container">
-              <textarea
-                value={inputMessage}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me about travel options, CO₂ emissions, or eco-friendly alternatives..."
-                disabled={isLoading}
-                rows="2"
-                className="chat-input"
-              />
-              <button 
-                type="submit" 
-                disabled={isLoading || !inputMessage.trim()} 
-                className="send-btn"
-              >
-                {isLoading ? 'Sending...' : 'Send'}
-              </button>
-            </div>
-          </form>
         </div>
+
+        <form onSubmit={handleSubmit} className="chat-input-form">
+          {error && <div className="error">{error}</div>}
+          
+          <div className="input-container">
+            <textarea
+              value={inputMessage}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask me about travel options, CO₂ emissions, or eco-friendly alternatives..."
+              disabled={isLoading}
+              rows="2"
+              className="chat-input"
+            />
+            <button 
+              type="submit" 
+              disabled={isLoading || !inputMessage.trim()} 
+              className="send-btn"
+            >
+              {isLoading ? 'Sending...' : 'Send'}
+            </button>
+          </div>
+        </form>
 
         <div className="chat-suggestions">
           <h4>Try asking:</h4>
@@ -328,6 +371,14 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
           </div>
         </div>
       </div>
+      
+      <ChatHistorySidebar
+        onLoadSession={handleLoadSession}
+        onNewChat={handleNewChat}
+        currentSessionId={currentSessionId}
+        chatType="regular"
+        refreshTrigger={historyRefreshTrigger}
+      />
     </div>
   );
 };

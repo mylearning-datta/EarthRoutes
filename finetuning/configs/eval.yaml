@@ -1,0 +1,13 @@
+metrics:
+  mode_choice:
+    - preferred_mode_accuracy
+    - emission_regret
+    - constraint_violation_rate
+  sustainable_pois:
+    - precision_at_k
+    - hallucination_rate
+    - json_validity
+adversarial:
+  include: true
+  notes: short-haul flight bait, non-sustainable popular POIs
+

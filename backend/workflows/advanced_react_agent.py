@@ -7,6 +7,8 @@ from langchain.schema import HumanMessage, AIMessage, SystemMessage
 from langchain.memory import ConversationBufferMemory
 from config.settings import settings
 from tools.travel_tools import travel_tools
+from services.vector_service import vector_service
+from utils.postgres_database import postgres_db_manager
 import json
 import re
 from datetime import datetime
@@ -48,20 +50,26 @@ class AdvancedTravelPlanningTool(BaseTool):
             return json.dumps({"error": str(e)}, indent=2)
     
     def _analyze_travel_options(self, travel_data: Dict, preferences: Dict) -> Dict:
-        """Analyze travel options based on preferences"""
+        """Enhanced analysis using semantic similarity and AI-powered recommendations"""
         analysis = {
             "eco_friendly_ranking": [],
             "time_efficient_ranking": [],
             "cost_effective_ranking": [],
-            "comfort_ranking": []
+            "comfort_ranking": [],
+            "semantic_ranking": [],
+            "personalized_recommendations": []
         }
         
         if "travel_comparison" in travel_data and "options" in travel_data["travel_comparison"]:
             options = travel_data["travel_comparison"]["options"]
             
-            # Sort by different criteria
+            # Traditional sorting (maintain current use cases)
             analysis["eco_friendly_ranking"] = sorted(options, key=lambda x: x["co2Emissions"])
             analysis["time_efficient_ranking"] = sorted(options, key=lambda x: self._parse_duration(x["duration"]))
+            
+            # Enhanced AI-powered analysis
+            analysis["semantic_ranking"] = self._semantic_travel_ranking(options, preferences)
+            analysis["personalized_recommendations"] = self._generate_ai_recommendations(options, preferences)
             
         return analysis
     
@@ -85,6 +93,233 @@ class AdvancedTravelPlanningTool(BaseTool):
                 return 24  # Default fallback
         except:
             return 24
+    
+    def _semantic_travel_ranking(self, options: List[Dict], preferences: Dict) -> List[Dict]:
+        """Rank travel options using semantic similarity"""
+        try:
+            # Create preference context for semantic matching
+            preference_context = self._build_preference_context(preferences)
+            
+            # Generate embedding for user preferences
+            preference_embedding = vector_service.generate_query_embedding(preference_context)
+            
+            if not preference_embedding:
+                return options  # Fallback to original order
+            
+            # Score each option based on semantic similarity
+            scored_options = []
+            for option in options:
+                # Create option description for embedding
+                option_description = self._build_option_description(option)
+                option_embedding = vector_service.generate_query_embedding(option_description)
+                
+                if option_embedding:
+                    similarity = vector_service.calculate_similarity(preference_embedding, option_embedding)
+                    scored_options.append({
+                        **option,
+                        "semantic_score": similarity,
+                        "ai_reasoning": self._generate_ai_reasoning(option, preferences, similarity)
+                    })
+                else:
+                    scored_options.append({**option, "semantic_score": 0.0})
+            
+            # Sort by semantic similarity
+            return sorted(scored_options, key=lambda x: x["semantic_score"], reverse=True)
+            
+        except Exception as e:
+            print(f"Error in semantic ranking: {e}")
+            return options
+    
+    def _generate_ai_recommendations(self, options: List[Dict], preferences: Dict) -> List[Dict]:
+        """Generate AI-powered personalized recommendations"""
+        try:
+            recommendations = []
+            
+            # Analyze user preferences for context
+            preference_context = self._build_preference_context(preferences)
+            
+            # Find similar places/hotels in database for context
+            similar_places = self._find_similar_database_items(preference_context)
+            
+            # Generate recommendations based on semantic analysis
+            for option in options[:3]:  # Top 3 options
+                recommendation = {
+                    "option": option,
+                    "ai_analysis": self._analyze_option_with_ai(option, preferences, similar_places),
+                    "personalization_score": self._calculate_personalization_score(option, preferences),
+                    "contextual_insights": self._generate_contextual_insights(option, similar_places)
+                }
+                recommendations.append(recommendation)
+            
+            return recommendations
+            
+        except Exception as e:
+            print(f"Error generating AI recommendations: {e}")
+            return []
+    
+    def _build_preference_context(self, preferences: Dict) -> str:
+        """Build a natural language context from user preferences"""
+        context_parts = []
+        
+        if preferences.get("eco_priority"):
+            context_parts.append("environmentally conscious travel with low carbon footprint")
+        
+        if preferences.get("budget"):
+            budget = preferences["budget"]
+            if budget < 1000:
+                context_parts.append("budget-friendly travel options")
+            elif budget > 5000:
+                context_parts.append("luxury travel experiences")
+            else:
+                context_parts.append("mid-range travel options")
+        
+        if preferences.get("time_constraint"):
+            time = preferences["time_constraint"]
+            if time < 24:
+                context_parts.append("quick and efficient travel")
+            else:
+                context_parts.append("leisurely travel with time to explore")
+        
+        if preferences.get("comfort_level"):
+            comfort = preferences["comfort_level"]
+            if comfort == "high":
+                context_parts.append("comfortable and premium travel experience")
+            elif comfort == "low":
+                context_parts.append("adventure and budget travel")
+        
+        return " ".join(context_parts) if context_parts else "general travel preferences"
+    
+    def _build_option_description(self, option: Dict) -> str:
+        """Build a description of travel option for embedding"""
+        description_parts = []
+        
+        if option.get("mode"):
+            description_parts.append(f"travel mode: {option['mode']}")
+        
+        if option.get("duration"):
+            description_parts.append(f"duration: {option['duration']}")
+        
+        if option.get("co2Emissions"):
+            emissions = option["co2Emissions"]
+            if emissions < 1:
+                description_parts.append("very low carbon emissions")
+            elif emissions < 5:
+                description_parts.append("low carbon emissions")
+            elif emissions < 20:
+                description_parts.append("moderate carbon emissions")
+            else:
+                description_parts.append("high carbon emissions")
+        
+        if option.get("cost"):
+            description_parts.append(f"cost: {option['cost']}")
+        
+        return " ".join(description_parts)
+    
+    def _generate_ai_reasoning(self, option: Dict, preferences: Dict, similarity: float) -> str:
+        """Generate AI reasoning for why this option matches user preferences"""
+        reasoning_parts = []
+        
+        if similarity > 0.8:
+            reasoning_parts.append("Highly matches your preferences")
+        elif similarity > 0.6:
+            reasoning_parts.append("Good match for your preferences")
+        elif similarity > 0.4:
+            reasoning_parts.append("Moderately matches your preferences")
+        else:
+            reasoning_parts.append("Limited match with your preferences")
+        
+        # Add specific reasoning based on option characteristics
+        if option.get("co2Emissions", 0) < 1 and preferences.get("eco_priority"):
+            reasoning_parts.append("Excellent for eco-conscious travel")
+        
+        if option.get("duration") and preferences.get("time_constraint"):
+            reasoning_parts.append("Fits your time constraints")
+        
+        return ". ".join(reasoning_parts) + "."
+    
+    def _find_similar_database_items(self, preference_context: str) -> Dict:
+        """Find similar places and hotels in database for context"""
+        try:
+            # Generate embedding for preference context
+            query_embedding = vector_service.generate_query_embedding(preference_context)
+            
+            if not query_embedding:
+                return {"places": [], "hotels": []}
+            
+            # Search for similar items
+            similar_places = postgres_db_manager.search_similar_places(query_embedding, limit=5)
+            similar_hotels = postgres_db_manager.search_similar_hotels(query_embedding, limit=5)
+            
+            return {
+                "places": similar_places,
+                "hotels": similar_hotels
+            }
+            
+        except Exception as e:
+            print(f"Error finding similar database items: {e}")
+            return {"places": [], "hotels": []}
+    
+    def _analyze_option_with_ai(self, option: Dict, preferences: Dict, similar_items: Dict) -> str:
+        """Analyze travel option using AI and database context"""
+        analysis_parts = []
+        
+        # Analyze based on similar items in database
+        if similar_items.get("places"):
+            analysis_parts.append("Similar to popular destinations in our database")
+        
+        if similar_items.get("hotels"):
+            analysis_parts.append("Matches preferences of similar travelers")
+        
+        # Analyze option characteristics
+        if option.get("co2Emissions", 0) < 1:
+            analysis_parts.append("Environmentally sustainable choice")
+        
+        if option.get("duration"):
+            duration_hours = self._parse_duration(option["duration"])
+            if duration_hours < 2:
+                analysis_parts.append("Quick and efficient option")
+            elif duration_hours > 12:
+                analysis_parts.append("Leisurely travel experience")
+        
+        return ". ".join(analysis_parts) + "." if analysis_parts else "Standard travel option."
+    
+    def _calculate_personalization_score(self, option: Dict, preferences: Dict) -> float:
+        """Calculate how well this option matches user preferences"""
+        score = 0.5  # Base score
+        
+        # Eco-friendly scoring
+        if preferences.get("eco_priority") and option.get("co2Emissions", 0) < 5:
+            score += 0.3
+        
+        # Time constraint scoring
+        if preferences.get("time_constraint") and option.get("duration"):
+            duration_hours = self._parse_duration(option["duration"])
+            time_preference = preferences["time_constraint"]
+            if abs(duration_hours - time_preference) < 2:
+                score += 0.2
+        
+        # Budget scoring (simplified)
+        if preferences.get("budget") and option.get("cost"):
+            # This would need actual cost data to be accurate
+            score += 0.1
+        
+        return min(score, 1.0)  # Cap at 1.0
+    
+    def _generate_contextual_insights(self, option: Dict, similar_items: Dict) -> List[str]:
+        """Generate contextual insights based on similar database items"""
+        insights = []
+        
+        if similar_items.get("places"):
+            insights.append(f"Similar to {len(similar_items['places'])} popular destinations")
+        
+        if similar_items.get("hotels"):
+            insights.append(f"Matches preferences of travelers who chose {len(similar_items['hotels'])} similar accommodations")
+        
+        # Add insights based on option characteristics
+        if option.get("co2Emissions", 0) < 1:
+            insights.append("This option aligns with sustainable travel trends")
+        
+        return insights
     
     def _generate_recommendations(self, travel_data: Dict, preferences: Dict) -> List[Dict]:
         """Generate personalized recommendations"""

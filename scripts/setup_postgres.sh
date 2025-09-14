@@ -97,17 +97,17 @@ fi
 
 # Create database
 echo "🗄️  Creating database..."
-sudo -u postgres psql -c "CREATE DATABASE travel_data;" || echo "Database travel_data might already exist"
+psql -h localhost -p 5432 -U postgres -d postgres -c "CREATE DATABASE travel_data;" || echo "Database travel_data might already exist"
 
-# Create user
-sudo -u postgres psql -c "CREATE USER postgres WITH PASSWORD 'password';" || echo "User postgres might already exist"
+# Create user (postgres user already exists with our custom setup)
+echo "👤 User postgres already exists with our custom setup"
 
 # Grant privileges
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE travel_data TO postgres;"
+psql -h localhost -p 5432 -U postgres -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE travel_data TO postgres;"
 
 # Enable pgvector extension
 echo "🔧 Enabling pgvector extension..."
-sudo -u postgres psql -d travel_data -c "CREATE EXTENSION IF NOT EXISTS vector;"
+psql -h localhost -p 5432 -U postgres -d travel_data -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
 echo "✅ PostgreSQL setup completed!"
 echo ""

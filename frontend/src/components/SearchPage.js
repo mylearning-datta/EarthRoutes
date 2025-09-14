@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/auth';
 
-const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat }) => {
+const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat, onNavigateToFinetunedChat }) => {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -213,6 +213,9 @@ const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat }) => {
             <button onClick={onNavigateToChat} className="chat-btn">
               Chat Assistant
             </button>
+            <button onClick={onNavigateToFinetunedChat} className="finetuned-chat-btn">
+              Fine-Tuned LLM
+            </button>
             <button onClick={onNavigateToProfile} className="profile-btn">
               Profile
             </button>
@@ -344,7 +347,7 @@ const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat }) => {
                 </div>
                 <div className="places-list">
                   {allPlaces.slice(0, 8).map((place, index) => (
-                    <div key={index} className={`place-item ${place.is_sustainable === 1 ? 'sustainable' : 'regular'}`}>
+                    <div key={index} className={`place-item ${(place.is_sustainable === 1 || place.is_sustainable === true) ? 'sustainable' : 'regular'}`}>
                       <div className="place-header">
                         <span className="place-name">{place.name}</span>
                         <div className="place-badges">
@@ -354,7 +357,7 @@ const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat }) => {
                               <span className="review-count"> ({place.google_reviews_lakhs}L reviews)</span>
                             )}
                           </span>
-                          {place.is_sustainable === 1 && <span className="eco-badge">🌿 Eco-Friendly</span>}
+                          {(place.is_sustainable === 1 || place.is_sustainable === true) && <span className="eco-badge">🌿 Eco-Friendly</span>}
                         </div>
                       </div>
                       <div className="place-details">
@@ -362,7 +365,7 @@ const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat }) => {
                         {place.establishment_year && (
                           <span className="establishment-year">Est. {place.establishment_year}</span>
                         )}
-                        {place.is_sustainable === 1 && place.sustainability_reason && (
+                        {(place.is_sustainable === 1 || place.is_sustainable === true) && place.sustainability_reason && (
                           <span className="sustainability-reason">{place.sustainability_reason}</span>
                         )}
                       </div>
