@@ -122,18 +122,19 @@ if ! ./venv/bin/python -c "import fastapi, uvicorn, langchain, openai" 2>/dev/nu
     ./venv/bin/pip install -r requirements.txt
 fi
 
-# Start the backend
-./venv/bin/python start_backend.py &
+# Start the backend with logging
+echo -e "${GREEN}📝 Starting backend with server logging...${NC}"
+./venv/bin/python start_backend.py > ../logs/backend.log 2>&1 &
 BACKEND_PID=$!
 cd ..
 
 # Wait a moment for backend to start
 sleep 5
 
-# Start the frontend in background
+# Start the frontend in background with logging
 echo -e "${GREEN}🎨 Starting frontend on port 3000...${NC}"
 cd frontend
-npm start &
+npm start > ../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
 cd ..
 
@@ -152,6 +153,9 @@ echo -e "   • Backend API: ${GREEN}http://localhost:8000/docs${NC}"
 echo -e "   • Health Check: ${GREEN}http://localhost:8000/api/health${NC}"
 echo ""
 echo -e "${YELLOW}💡 To stop the application, press Ctrl+C or run ./scripts/stop.sh${NC}"
+echo -e "${BLUE}📝 Server logs are being saved to:${NC}"
+echo -e "   • Backend logs: ${GREEN}logs/backend.log${NC}"
+echo -e "   • Frontend logs: ${GREEN}logs/frontend.log${NC}"
 echo "=================================================="
 
 # Wait for background processes

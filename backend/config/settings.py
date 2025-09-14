@@ -9,7 +9,23 @@ class Settings:
     GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
     
     # Database
-    DB_PATH = os.getenv("DB_PATH", "../db/travel_data.db")
+    DB_PATH = os.getenv("DB_PATH", "../db/travel_data.db")  # Keep for migration
+    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+    POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+    POSTGRES_DB = os.getenv("POSTGRES_DB", "travel_data")
+    POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+    POSTGRES_DATA_DIR = os.getenv("POSTGRES_DATA_DIR", "../db/postgres")
+    
+    @property
+    def POSTGRES_URL(self):
+        """Get PostgreSQL connection URL"""
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    
+    @property
+    def POSTGRES_ASYNC_URL(self):
+        """Get PostgreSQL async connection URL"""
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
     # JWT
     JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
@@ -40,8 +56,8 @@ class Settings:
     def TRAVEL_MODES(self):
         """Get travel modes from database"""
         try:
-            from utils.database import db_manager
-            return db_manager.get_travel_modes()
+            from utils.postgres_database import postgres_db_manager
+            return postgres_db_manager.get_travel_modes()
         except Exception as e:
             print(f"Warning: Could not load travel modes from database: {e}")
             # Return fallback as dictionary format
@@ -61,8 +77,8 @@ class Settings:
     def MAJOR_CITIES(self):
         """Get cities from database"""
         try:
-            from utils.database import db_manager
-            return db_manager.get_cities()
+            from utils.postgres_database import postgres_db_manager
+            return postgres_db_manager.get_cities()
         except Exception as e:
             print(f"Warning: Could not load cities from database: {e}")
             return self.FALLBACK_CITIES

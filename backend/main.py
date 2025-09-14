@@ -11,7 +11,8 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import uvicorn
 import os
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import hashlib
 import secrets
 import jwt
@@ -46,7 +47,6 @@ app.add_middleware(
 security = HTTPBearer()
 
 # Database setup
-DB_PATH = settings.DB_PATH
 JWT_SECRET = settings.JWT_SECRET
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
@@ -92,43 +92,60 @@ class ChatResponse(BaseModel):
     intermediate_steps: Optional[List[Dict]] = None
 
 # Database functions
+def get_db_connection():
+    """Get PostgreSQL database connection"""
+    return psycopg2.connect(
+        host=settings.POSTGRES_HOST,
+        port=settings.POSTGRES_PORT,
+        database=settings.POSTGRES_DB,
+        user=settings.POSTGRES_USER,
+        password=settings.POSTGRES_PASSWORD
+    )
+
 def init_database():
     """Initialize the database with required tables"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # Create users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            email TEXT UNIQUE,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    # Create CO2 emissions table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS co2_emissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            origin TEXT NOT NULL,
-            destination TEXT NOT NULL,
-            distance_km REAL NOT NULL,
-            travel_mode TEXT NOT NULL,
-            emission_factor REAL NOT NULL,
-            total_emissions REAL NOT NULL,
-            trees_needed REAL,
-            daily_average_percentage REAL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    """)
-    
-    conn.commit()
-    conn.close()
-    print("Database initialized successfully")
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Enable pgvector extension
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        
+        # Create users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                email TEXT UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create CO2 emissions table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS co2_emissions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                origin TEXT NOT NULL,
+                destination TEXT NOT NULL,
+                distance_km REAL NOT NULL,
+                travel_mode TEXT NOT NULL,
+                emission_factor REAL NOT NULL,
+                total_emissions REAL NOT NULL,
+                trees_needed REAL,
+                daily_average_percentage REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+        
+        conn.commit()
+        conn.close()
+        print("PostgreSQL database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        raise
 
 def hash_password(password: str) -> str:
     """Hash password using SHA-256 with salt"""
@@ -146,17 +163,17 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 def create_user(username: str, password: str, email: str = None) -> Dict:
     """Create a new user"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     hashed_password = hash_password(password)
     
     try:
         cursor.execute(
-            "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
+            "INSERT INTO users (username, password, email) VALUES (%s, %s, %s) RETURNING id",
             (username, hashed_password, email)
         )
-        user_id = cursor.lastrowid
+        user_id = cursor.fetchone()[0]
         conn.commit()
         
         return {
@@ -165,17 +182,17 @@ def create_user(username: str, password: str, email: str = None) -> Dict:
             "email": email,
             "created_at": datetime.now().isoformat()
         }
-    except sqlite3.IntegrityError:
+    except psycopg2.IntegrityError:
         raise HTTPException(status_code=400, detail="Username or email already exists")
     finally:
         conn.close()
 
 def find_user_by_username(username: str) -> Optional[Dict]:
     """Find user by username"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
     row = cursor.fetchone()
     conn.close()
     
@@ -191,10 +208,10 @@ def find_user_by_username(username: str) -> Optional[Dict]:
 
 def find_user_by_id(user_id: int) -> Optional[Dict]:
     """Find user by ID"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     row = cursor.fetchone()
     conn.close()
     
@@ -609,8 +626,8 @@ async def get_cities():
     """Get available cities (public for login screens)"""
     # Try DB cities via utils if available, fallback to settings.MAJOR_CITIES
     try:
-        from utils.database import db_manager
-        cities = db_manager.get_cities()
+        from utils.postgres_database import postgres_db_manager
+        cities = postgres_db_manager.get_cities()
         if not cities:
             cities = settings.MAJOR_CITIES
     except Exception:
@@ -621,8 +638,8 @@ async def get_cities():
 async def get_sustainable_places(city: str, current_user: Dict = Depends(get_current_user)):
     """Get sustainable places in a specific city"""
     try:
-        from utils.database import db_manager
-        sustainable_places = db_manager.get_sustainable_places_in_city(city)
+        from utils.postgres_database import postgres_db_manager
+        sustainable_places = postgres_db_manager.get_sustainable_places_in_city(city)
         return {
             "success": True,
             "city": city,
@@ -636,9 +653,9 @@ async def get_sustainable_places(city: str, current_user: Dict = Depends(get_cur
 async def get_all_places(city: str, current_user: Dict = Depends(get_current_user)):
     """Get all places in a specific city"""
     try:
-        from utils.database import db_manager
-        all_places = db_manager.get_places_in_city(city)
-        sustainable_places = db_manager.get_sustainable_places_in_city(city)
+        from utils.postgres_database import postgres_db_manager
+        all_places = postgres_db_manager.get_places_in_city(city)
+        sustainable_places = postgres_db_manager.get_sustainable_places_in_city(city)
         return {
             "success": True,
             "city": city,
@@ -654,18 +671,10 @@ async def get_all_places(city: str, current_user: Dict = Depends(get_current_use
 async def get_all_cities(current_user: Dict = Depends(get_current_user)):
     """Get hotel and places city lists (requires auth)"""
     try:
-        from utils.database import db_manager
-        hotel_cities = []
-        place_cities = []
-        # Query distinct city lists if tables exist
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            hotel_cities = [r[0] for r in conn.execute("SELECT DISTINCT city FROM hotels WHERE city IS NOT NULL").fetchall()]
-            place_cities = [r[0] for r in conn.execute("SELECT DISTINCT city FROM places WHERE city IS NOT NULL").fetchall()]
-            conn.close()
-        except Exception:
-            pass
-        common_cities = db_manager.get_cities()
+        from utils.postgres_database import postgres_db_manager
+        hotel_cities = postgres_db_manager.get_hotels_in_city_list()
+        place_cities = postgres_db_manager.get_places_in_city_list()
+        common_cities = postgres_db_manager.get_cities()
         return {
             "hotelCities": hotel_cities,
             "placeCities": place_cities,

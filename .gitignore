@@ -66,6 +66,11 @@ logs
 *.sqlite
 *.sqlite3
 
+# PostgreSQL data directory (keep structure but ignore data files)
+db/postgres/*
+!db/postgres/.gitkeep
+!db/postgres/postgresql.conf
+
 # Temporary files
 temp/
 tmp/
