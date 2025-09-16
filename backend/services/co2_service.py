@@ -1,21 +1,27 @@
 import math
 from typing import Dict, List
+from utils.postgres_database import postgres_db_manager
 
 
 class CO2EmissionService:
     def __init__(self) -> None:
-        # kg CO2 per km factors (aligned with original JS service)
-        self.emission_factors: Dict[str, float] = {
-            "flight": 0.255,
-            "diesel_car": 0.171,
-            "petrol_car": 0.192,
-            "electric_car": 0.053,
-            "train_diesel": 0.041,
-            "bus_shared": 0.089,
-            "train_electric": 0.041,
-            "bicycle": 0.0,
-            "walking": 0.0,
-        }
+        # Load emission factors from database when available, fallback otherwise
+        try:
+            modes = postgres_db_manager.get_travel_modes()
+            self.emission_factors = {mode_id: data.get("emission_factor", 0.1) for mode_id, data in modes.items()}
+        except Exception:
+            # Safe fallback
+            self.emission_factors: Dict[str, float] = {
+                "flight": 0.255,
+                "diesel_car": 0.169,
+                "petrol_car": 0.155,
+                "electric_car": 0.07,
+                "train_diesel": 0.06,
+                "bus_shared": 0.08,
+                "train_electric": 0.03,
+                "bicycle": 0.0,
+                "walking": 0.0,
+            }
 
     def calculate_emissions(self, distance_km: float, travel_mode: str, options: Dict = {}) -> Dict:
         emission_factor = self.emission_factors.get(travel_mode, 0.1)

@@ -37,6 +37,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Preload finetuned model on startup (so first request doesn't fail)
+@app.on_event("startup")
+async def _preload_finetuned_model():
+    try:
+        # This will construct and load the model service once
+        _ = get_finetuned_model_service()
+        print("Finetuned model preload triggered (MLX/transformers)")
+    except Exception as e:
+        print(f"Warning: Finetuned model preload failed: {e}")
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -128,16 +138,38 @@ def init_database():
         # Enable pgvector extension
         cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
         
-        # Create users table
+        # Create users table (desired schema)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
                 email TEXT UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Lightweight migration: if an older schema with 'password' column exists,
+        # and 'password_hash' does not, rename the column to 'password_hash'
+        cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'users'
+        """)
+        existing_columns = {row[0] for row in cursor.fetchall()}
+        if 'password' in existing_columns and 'password_hash' not in existing_columns:
+            cursor.execute("ALTER TABLE users RENAME COLUMN password TO password_hash;")
+        
+        # Ensure users.email is nullable (frontend treats email as optional)
+        cursor.execute(
+            """
+            SELECT is_nullable FROM information_schema.columns
+            WHERE table_name='users' AND column_name='email'
+            """
+        )
+        email_nullable_row = cursor.fetchone()
+        if email_nullable_row and str(email_nullable_row[0]).upper() == 'NO':
+            cursor.execute("ALTER TABLE users ALTER COLUMN email DROP NOT NULL;")
         
         # Create CO2 emissions table
         cursor.execute("""
@@ -209,7 +241,10 @@ def find_user_by_username(username: str) -> Optional[Dict]:
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    cursor.execute(
+        "SELECT id, username, email, password_hash, created_at FROM users WHERE username = %s",
+        (username,)
+    )
     row = cursor.fetchone()
     conn.close()
     
@@ -228,7 +263,10 @@ def find_user_by_id(user_id: int) -> Optional[Dict]:
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    cursor.execute(
+        "SELECT id, username, email, password_hash, created_at FROM users WHERE id = %s",
+        (user_id,)
+    )
     row = cursor.fetchone()
     conn.close()
     
@@ -367,77 +405,10 @@ class GoogleMapsService:
             "mode": "estimated"
         }
 
-# CO2 Emission service
-class CO2EmissionService:
-    def __init__(self):
-        self.emission_factors = {
-            "flight": 0.255,  # kg CO2 per km
-            "diesel_car": 0.171,
-            "petrol_car": 0.192,
-            "electric_car": 0.053,
-            "train_diesel": 0.041,
-            "bus_shared": 0.089,
-            "train_electric": 0.041,
-            "bicycle": 0.0,
-            "walking": 0.0
-        }
-    
-    def calculate_emissions(self, distance_km: float, travel_mode: str, options: Dict = {}) -> Dict:
-        """Calculate CO2 emissions for a given distance and travel mode"""
-        emission_factor = self.emission_factors.get(travel_mode, 0.1)
-        total_emissions = distance_km * emission_factor
-        
-        # Calculate equivalent metrics
-        trees_needed = math.ceil(total_emissions / 22)  # 1 tree absorbs ~22kg CO2/year
-        daily_average_percentage = (total_emissions / 16.4) * 100  # Average person emits 16.4kg CO2/day
-        
-        return {
-            "distanceKm": distance_km,
-            "travelMode": travel_mode,
-            "emissionFactor": emission_factor,
-            "totalEmissions": total_emissions,
-            "equivalentMetrics": {
-                "treesNeeded": trees_needed,
-                "dailyAveragePercentage": daily_average_percentage
-            }
-        }
-    
-    def compare_emissions(self, distance_km: float, travel_modes: List[str]) -> List[Dict]:
-        """Compare CO2 emissions between different travel modes"""
-        comparisons = []
-        for mode in travel_modes:
-            emission_data = self.calculate_emissions(distance_km, mode)
-            comparisons.append(emission_data)
-        
-        # Sort by emissions (lowest first)
-        comparisons.sort(key=lambda x: x["totalEmissions"])
-        return comparisons
-    
-    def calculate_savings(self, distance_km: float, from_mode: str, to_mode: str) -> Dict:
-        """Calculate CO2 savings by switching travel modes"""
-        from_emissions = self.calculate_emissions(distance_km, from_mode)
-        to_emissions = self.calculate_emissions(distance_km, to_mode)
-        
-        savings = from_emissions["totalEmissions"] - to_emissions["totalEmissions"]
-        savings_percentage = (savings / from_emissions["totalEmissions"]) * 100 if from_emissions["totalEmissions"] > 0 else 0
-        
-        return {
-            "distanceKm": distance_km,
-            "fromMode": from_mode,
-            "toMode": to_mode,
-            "fromEmissions": from_emissions["totalEmissions"],
-            "toEmissions": to_emissions["totalEmissions"],
-            "savings": savings,
-            "savingsPercentage": savings_percentage
-        }
-    
-    def get_all_emission_factors(self) -> Dict:
-        """Get all available emission factors"""
-        return self.emission_factors
-
 # Initialize services
 google_maps_service = GoogleMapsService()
-co2_service = CO2EmissionService()
+from services.co2_service import CO2EmissionService as SharedCO2Service
+co2_service = SharedCO2Service()
 
 # Initialize database
 init_database()
@@ -716,7 +687,8 @@ async def chat_with_finetuned_model(
         model_service = get_finetuned_model_service()
         
         # Get prediction from the fine-tuned model
-        result = model_service.predict(chat_request.message.strip())
+        max_tokens = getattr(chat_request, 'max_tokens', 5000)
+        result = model_service.predict(chat_request.message.strip(), max_new_tokens=max_tokens)
         
         # Add bot response to session
         postgres_db_manager.add_chat_message(

@@ -27,11 +27,12 @@ except ImportError:
 class TravelSustainabilityModel:
     """Wrapper for the trained travel sustainability model."""
     
-    def __init__(self, model_path: str):
+    def __init__(self, model_path: str, base_model_override: Optional[str] = None):
         """Initialize the model from saved path."""
         self.model_path = Path(model_path)
         self.tokenizer = None
         self.model = None
+        self.base_model_override = base_model_override
         self.load_model()
     
     def load_model(self):
@@ -52,10 +53,23 @@ class TravelSustainabilityModel:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             
+            # Determine base model: override > adapter_config > default gpt2
+            adapter_config_path = self.model_path / "adapter_config.json"
+            base_model_name = "gpt2"
+            if self.base_model_override:
+                base_model_name = self.base_model_override
+            elif adapter_config_path.exists():
+                try:
+                    with open(adapter_config_path, "r", encoding="utf-8") as f:
+                        adapter_cfg = json.load(f)
+                        base_model_name = adapter_cfg.get("base_model_name_or_path", base_model_name)
+                except Exception:
+                    pass
+
             # Load base model
             base_model = AutoModelForCausalLM.from_pretrained(
-                "gpt2",
-                torch_dtype=torch.float16,
+                base_model_name,
+                torch_dtype=torch.float16 if torch.cuda.is_available() else None,
                 device_map="auto" if torch.cuda.is_available() else "cpu",
                 load_in_8bit=True if torch.cuda.is_available() else False
             )
@@ -121,13 +135,13 @@ class TravelSustainabilityModel:
         return self.model is not None and self.tokenizer is not None
 
 
-def test_model_inference(model_path: str = "finetuning/models/travel-sustainability-lora"):
+def test_model_inference(model_path: str = "finetuning/models/travel-sustainability-lora", base_model: Optional[str] = None):
     """Test the trained model with sample queries."""
     print("Testing Travel Sustainability Model")
     print("=" * 50)
     
     # Initialize model
-    model = TravelSustainabilityModel(model_path)
+    model = TravelSustainabilityModel(model_path, base_model)
     
     if not model.is_loaded():
         print("Model not loaded. Please train the model first:")
@@ -158,14 +172,14 @@ def test_model_inference(model_path: str = "finetuning/models/travel-sustainabil
     print("Inference test complete!")
 
 
-def interactive_mode(model_path: str = "finetuning/models/travel-sustainability-lora"):
+def interactive_mode(model_path: str = "finetuning/models/travel-sustainability-lora", base_model: Optional[str] = None):
     """Interactive mode for testing queries."""
     print("Interactive Travel Sustainability Assistant")
     print("=" * 50)
     print("Type 'quit' to exit")
     
     # Initialize model
-    model = TravelSustainabilityModel(model_path)
+    model = TravelSustainabilityModel(model_path, base_model)
     
     if not model.is_loaded():
         print("Model not loaded. Please train the model first:")
@@ -207,13 +221,14 @@ def main():
                        help="Path to the trained model")
     parser.add_argument("--mode", choices=["test", "interactive"], default="test",
                        help="Mode: test with sample queries or interactive")
+    parser.add_argument("--base-model", default=None, help="Override base model name if adapter differs")
     
     args = parser.parse_args()
     
     if args.mode == "test":
-        test_model_inference(args.model_path)
+        test_model_inference(args.model_path, args.base_model)
     else:
-        interactive_mode(args.model_path)
+        interactive_mode(args.model_path, args.base_model)
 
 
 if __name__ == "__main__":

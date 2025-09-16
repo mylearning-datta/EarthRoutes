@@ -1,6 +1,7 @@
 from typing import Dict, List
 import requests
 from config.settings import settings
+from utils.postgres_database import postgres_db_manager
 
 
 class GoogleMapsService:
@@ -10,33 +11,36 @@ class GoogleMapsService:
 
     def _estimate_distance_km(self, source: str, destination: str) -> float:
         """Estimate distance using Haversine formula for major cities"""
-        # Get city coordinates from settings
-        city_coords = settings.CITY_COORDINATES
+        # Get city coordinates from database
+        source_coords = postgres_db_manager.get_city_coordinates(source)
+        dest_coords = postgres_db_manager.get_city_coordinates(destination)
         
-        # Normalize city names
-        source_norm = source.lower().strip()
-        dest_norm = destination.lower().strip()
-        
-        # Try exact match first
-        if source_norm in city_coords and dest_norm in city_coords:
-            return self._haversine_distance(city_coords[source_norm], city_coords[dest_norm])
-        
-        # Try partial matching
-        for city, coords in city_coords.items():
-            if city in source_norm or source_norm in city:
-                source_coords = coords
-                break
-        else:
-            # Default fallback coordinates (Delhi)
-            source_coords = (28.6139, 77.2090)
+        # If coordinates not found in database, try partial matching
+        if source_coords is None:
+            # Try to find similar city names
+            all_cities = postgres_db_manager.get_cities()
+            for city in all_cities:
+                if city.lower() in source.lower() or source.lower() in city.lower():
+                    source_coords = postgres_db_manager.get_city_coordinates(city)
+                    if source_coords:
+                        break
             
-        for city, coords in city_coords.items():
-            if city in dest_norm or dest_norm in city:
-                dest_coords = coords
-                break
-        else:
+            # Default fallback coordinates (Delhi)
+            if source_coords is None:
+                source_coords = (28.6139, 77.2090)
+        
+        if dest_coords is None:
+            # Try to find similar city names
+            all_cities = postgres_db_manager.get_cities()
+            for city in all_cities:
+                if city.lower() in destination.lower() or destination.lower() in city.lower():
+                    dest_coords = postgres_db_manager.get_city_coordinates(city)
+                    if dest_coords:
+                        break
+            
             # Default fallback coordinates (Mumbai)
-            dest_coords = (19.0760, 72.8777)
+            if dest_coords is None:
+                dest_coords = (19.0760, 72.8777)
             
         return self._haversine_distance(source_coords, dest_coords)
     

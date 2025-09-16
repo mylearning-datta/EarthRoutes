@@ -61,7 +61,7 @@ function App() {
     } else if (currentPage === 'chat') {
       return <ChatPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToSearch={navigateToSearch} onNavigateToFinetunedChat={navigateToFinetunedChat} />;
     } else if (currentPage === 'finetuned-chat') {
-      return <FineTunedChatPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToSearch={navigateToSearch} />;
+      return <FineTunedChatPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToSearch={navigateToSearch} onNavigateToChat={navigateToChat} />;
     } else {
       return <SearchPage onLogout={handleLogout} onNavigateToProfile={navigateToProfile} onNavigateToChat={navigateToChat} onNavigateToFinetunedChat={navigateToFinetunedChat} />;
     }

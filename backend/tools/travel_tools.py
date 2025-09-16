@@ -2,7 +2,7 @@ import requests
 import json
 from typing import Dict, List, Optional, Any
 from config.settings import settings
-from utils.database import db_manager
+from utils.postgres_database import postgres_db_manager as db_manager
 from services.google_maps import GoogleMapsService
 from services.co2_service import CO2EmissionService
 

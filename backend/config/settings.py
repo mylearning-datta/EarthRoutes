@@ -1,7 +1,10 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Always load backend/.env regardless of current working directory
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
 class Settings:
     # API Keys
@@ -39,6 +42,22 @@ class Settings:
     AGENT_MODEL = os.getenv("AGENT_MODEL", "gpt-4o")
     AGENT_TEMPERATURE = float(os.getenv("AGENT_TEMPERATURE", "0.1"))
     AGENT_MAX_TOKENS = int(os.getenv("AGENT_MAX_TOKENS", "2000"))
+
+    # Fine-tuned model selection (two variants only)
+    FINETUNED_MODEL_VARIANT = os.getenv("FINETUNED_MODEL_VARIANT", "base_4bit")
+    FINETUNED_MODEL_PATH = os.getenv("FINETUNED_MODEL_PATH")
+    FINETUNED_MODEL_PATH_BASE_4BIT = os.getenv(
+        "FINETUNED_MODEL_PATH_BASE_4BIT",
+        "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit",
+    )
+    FINETUNED_MODEL_ZIP_PATH_COLAB = os.getenv(
+        "FINETUNED_MODEL_ZIP_PATH_COLAB",
+        "/Users/arpita/Documents/project/data/model/mistral_lora.zip",
+    )
+    FINETUNED_MODEL_PATH_COLAB_EXTRACT = os.getenv(
+        "FINETUNED_MODEL_PATH_COLAB_EXTRACT",
+        "/Users/arpita/Documents/project/finetuning/models/mistral-7b-finetune-4bit-colab",
+    )
     
     # Fallback values (used if database is unavailable)
     FALLBACK_TRAVEL_MODES = [

@@ -84,7 +84,7 @@ async def chat(request: ChatRequest):
 async def get_cities():
     """Get list of available cities"""
     try:
-        from utils.database import db_manager
+        from utils.postgres_database import postgres_db_manager as db_manager
         cities = db_manager.get_cities()
         return {
             "success": True,
@@ -97,7 +97,7 @@ async def get_cities():
 async def get_travel_modes():
     """Get available travel modes and their emission factors"""
     try:
-        from utils.database import db_manager
+        from utils.postgres_database import postgres_db_manager as db_manager
         travel_modes = db_manager.get_travel_modes()
         return {
             "success": True,

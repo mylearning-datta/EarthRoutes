@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { authService } from '../services/auth';
 import ChatHistorySidebar from './ChatHistorySidebar';
 
-const FineTunedChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }) => {
+const FineTunedChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch, onNavigateToChat }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -156,9 +156,9 @@ const FineTunedChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }
             <div className="chat-title">
               <h2>Fine-Tuned Travel Assistant</h2>
               <div className="model-status">
-                {modelStatus && (
-                  <span className={`status-indicator ${modelStatus.is_loaded ? 'loaded' : 'not-loaded'}`}>
-                    {modelStatus.is_loaded ? '✓ Model Ready' : '⚠ Model Not Available'}
+                {modelStatus && !modelStatus.is_loaded && (
+                  <span className="status-indicator not-loaded">
+                    ⚠ Model Not Available
                   </span>
                 )}
               </div>
@@ -166,7 +166,13 @@ const FineTunedChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch }
           </div>
           <div className="header-actions">
             <button onClick={onNavigateToSearch} className="search-btn">
-              Travel Search
+              Home
+            </button>
+            <button onClick={onNavigateToChat} className="chat-btn">
+              Chat Assistant
+            </button>
+            <button className="finetuned-chat-btn" disabled>
+              Fine-Tuned LLM
             </button>
             <button onClick={onNavigateToProfile} className="profile-btn">
               Profile

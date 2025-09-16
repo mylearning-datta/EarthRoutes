@@ -1,0 +1,61 @@
+# MLX Fine-tuning Configuration
+model:
+  name: "mlx-community/Mistral-7B-Instruct-v0.2-4bit"
+  max_length: 1024
+
+# LoRA Configuration
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+# Training Configuration
+training:
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16
+  num_train_epochs: 3
+  learning_rate: 2.0e-4
+  warmup_steps: 100
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # MLX specific
+  use_bf16: true
+  gradient_checkpointing: true
+  
+  # Logging and saving
+  logging_steps: 20
+  save_steps: 500
+  eval_steps: 500
+  save_strategy: "epoch"
+  eval_strategy: "epoch"
+  
+  # Output
+  output_dir: "finetuning/models/mistral-mlx-lora"
+  overwrite_output_dir: true
+  
+  # Optimization
+  optim: "adamw"
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1e-8
+  
+  # Learning rate scheduling
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1
+
+# Data Configuration
+data:
+  train_files: ["finetuning/data/processed/mode_choice.jsonl", "finetuning/data/processed/sustainable_pois.jsonl"]
+  validation_split: 0.2
+  max_train_samples: null  # Use all available samples
+  max_eval_samples: null   # Use all available samples
+
+# System Configuration
+system:
+  seed: 42
+  dataloader_num_workers: 4
+  remove_unused_columns: true
+  report_to: "none"  # Set to "wandb" if using Weights & Biases

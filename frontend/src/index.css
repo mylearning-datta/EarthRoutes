@@ -19,7 +19,7 @@ code {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0;
   background: transparent;
@@ -145,6 +145,7 @@ button:disabled {
 .profile-actions .search-btn,
 .profile-actions .chat-btn,
 .profile-actions .finetuned-chat-btn,
+.profile-actions .profile-btn,
 .profile-actions .logout-btn {
   background-color: #28a745;
   color: white;
@@ -162,6 +163,7 @@ button:disabled {
   justify-content: center;
   white-space: nowrap;
   box-sizing: border-box;
+  margin: 0; /* override global button/search-btn margins */
 }
 
 .profile-actions .search-btn:hover,
@@ -185,10 +187,38 @@ button:disabled {
   background-color: #c82333;
 }
 
+/* Profile page explicit colors */
+.profile-page .profile-actions .search-btn { /* Home */
+  background-color: #007bff;
+}
+.profile-page .profile-actions .search-btn:hover {
+  background-color: #0056b3;
+}
+.profile-page .profile-actions .chat-btn { /* Chat Assistant */
+  background-color: #28a745;
+}
+.profile-page .profile-actions .finetuned-chat-btn { /* Fine-Tuned LLM */
+  background-color: #6f42c1;
+}
+.profile-page .profile-actions .logout-btn { /* Logout */
+  background-color: #dc3545;
+}
+
+/* Disabled state for navigation buttons across pages */
+.search-header .header-actions button:disabled,
+.chat-header .header-actions button:disabled,
+.profile-actions button:disabled {
+  background-color: #6c757d !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
 /* Force consistent styling for profile page buttons - override any conflicting styles */
 .profile-page .profile-actions .search-btn,
 .profile-page .profile-actions .chat-btn,
 .profile-page .profile-actions .finetuned-chat-btn,
+.profile-page .profile-actions .profile-btn,
 .profile-page .profile-actions .logout-btn {
   width: 160px !important;
   height: 44px !important;
@@ -201,11 +231,12 @@ button:disabled {
   border-radius: 6px !important;
   white-space: nowrap !important;
   box-sizing: border-box !important;
+  margin: 0 !important; /* ensure no offset from global rules */
 }
 
 /* Search Page Styles */
 .search-page {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -233,6 +264,7 @@ button:disabled {
 
 /* Ensure header buttons align and share same size on Search page */
 .search-header .header-actions { align-items: center; }
+.search-header .search-btn,
 .search-header .chat-btn,
 .search-header .finetuned-chat-btn,
 .search-header .profile-btn,
@@ -241,15 +273,20 @@ button:disabled {
   height: 44px;
   line-height: 44px;
   padding: 0 16px;        /* avoid stretching */
+  margin: 0;              /* override global margins (e.g., .search-btn) */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
 }
+/* Override Profile color in search header to teal */
+.search-header .profile-btn { background-color: #17a2b8; }
+.search-header .profile-btn:hover { background-color: #138496; }
 
 /* Ensure header buttons align and share same size on Chat page */
 .chat-header .header-actions { align-items: center; }
 .chat-header .search-btn,
+.chat-header .chat-btn,
 .chat-header .finetuned-chat-btn,
 .chat-header .profile-btn,
 .chat-header .logout-btn {
@@ -265,7 +302,7 @@ button:disabled {
 }
 
 .profile-btn {
-  background-color: #007bff;
+  background-color: #17a2b8;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -277,7 +314,7 @@ button:disabled {
 }
 
 .profile-btn:hover {
-  background-color: #0056b3;
+  background-color: #138496;
 }
 
 .search-form {
@@ -1071,6 +1108,10 @@ optgroup option {
   box-sizing: border-box !important;
 }
 
+/* Override Profile color in chat headers to teal */
+.chat-header .profile-btn { background-color: #17a2b8 !important; }
+.chat-header .profile-btn:hover { background-color: #138496 !important; }
+
 .chat-header .search-btn:hover,
 .chat-header .profile-btn:hover {
   background-color: #0056b3 !important;
@@ -1092,6 +1133,7 @@ optgroup option {
 }
 
 .chat-page .chat-header .search-btn,
+.chat-page .chat-header .chat-btn,
 .chat-page .chat-header .profile-btn,
 .chat-page .chat-header .logout-btn {
   vertical-align: top !important;
@@ -1110,7 +1152,7 @@ optgroup option {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
   background: white;

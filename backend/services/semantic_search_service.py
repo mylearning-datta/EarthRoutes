@@ -170,13 +170,15 @@ class SemanticSearchService:
                 query = """
                 SELECT id, name, city, type, significance, google_review_rating,
                        is_sustainable, sustainability_reason, description,
-                       1 - (embedding <=> %s) as similarity
+                       1 - (embedding <=> %s::vector) as similarity
                 FROM places 
                 WHERE city = %s AND embedding IS NOT NULL
-                ORDER BY embedding <=> %s
+                ORDER BY embedding <=> %s::vector
                 LIMIT %s
                 """
-                cursor.execute(query, (query_embedding, city, query_embedding, limit))
+                # Convert embedding to string format
+                embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
+                cursor.execute(query, (embedding_str, city, embedding_str, limit))
                 results = cursor.fetchall()
                 
                 # Convert to list of dicts
@@ -202,13 +204,15 @@ class SemanticSearchService:
                 cursor = conn.cursor()
                 query = """
                 SELECT id, name, city, rating, price_range, amenities, description,
-                       1 - (embedding <=> %s) as similarity
+                       1 - (embedding <=> %s::vector) as similarity
                 FROM hotels 
                 WHERE city = %s AND embedding IS NOT NULL
-                ORDER BY embedding <=> %s
+                ORDER BY embedding <=> %s::vector
                 LIMIT %s
                 """
-                cursor.execute(query, (query_embedding, city, query_embedding, limit))
+                # Convert embedding to string format
+                embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
+                cursor.execute(query, (embedding_str, city, embedding_str, limit))
                 results = cursor.fetchall()
                 
                 # Convert to list of dicts

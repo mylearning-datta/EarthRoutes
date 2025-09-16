@@ -208,8 +208,11 @@ const SearchPage = ({ onLogout, onNavigateToProfile, onNavigateToChat, onNavigat
     <div className="container">
       <div className="search-page">
         <div className="search-header">
-          <h2>Travel Search</h2>
+          <h2>EarthRoutes</h2>
           <div className="header-actions">
+            <button className="search-btn" disabled>
+              Home
+            </button>
             <button onClick={onNavigateToChat} className="chat-btn">
               Chat Assistant
             </button>

@@ -571,7 +571,7 @@ class PostgreSQLDatabaseManager:
                     # Use vector similarity search
                     query = """
                     SELECT id, name, city, rating, price_range, amenities, description,
-chat                            1 - (embedding <=> %s::vector) as similarity
+                           1 - (embedding <=> %s::vector) as similarity
                     FROM hotels 
                     WHERE embedding IS NOT NULL
                     ORDER BY embedding <=> %s::vector

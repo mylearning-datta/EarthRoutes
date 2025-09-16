@@ -268,7 +268,10 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch, onNavigat
           </div>
           <div className="header-actions">
             <button onClick={onNavigateToSearch} className="search-btn">
-              Travel Search
+              Home
+            </button>
+            <button className="chat-btn" disabled>
+              Chat Assistant
             </button>
             <button onClick={onNavigateToFinetunedChat} className="finetuned-chat-btn">
               Fine-Tuned LLM

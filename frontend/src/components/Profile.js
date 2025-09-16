@@ -51,7 +51,7 @@ const Profile = ({ user, onLogout, onNavigateToSearch, onNavigateToChat, onNavig
   }
 
   return (
-    <div className="container">
+    <div className="container profile-page">
       <div className="profile">
         <h2>Welcome, {user.username}!</h2>
         
@@ -65,13 +65,16 @@ const Profile = ({ user, onLogout, onNavigateToSearch, onNavigateToChat, onNavig
 
         <div className="profile-actions">
           <button onClick={onNavigateToSearch} className="search-btn">
-            Go to Travel Search
+            Home
           </button>
           <button onClick={onNavigateToChat} className="chat-btn">
             Chat Assistant
           </button>
           <button onClick={onNavigateToFinetunedChat} className="finetuned-chat-btn">
             Fine-Tuned LLM
+          </button>
+          <button className="profile-btn" disabled>
+            Profile
           </button>
           <button onClick={handleLogout} className="logout-btn">
             Logout

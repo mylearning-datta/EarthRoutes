@@ -511,11 +511,11 @@ class CityInformationTool(BaseTool):
                 cities = travel_tools.get_available_cities()
                 return json.dumps({"cities": cities}, indent=2)
             elif action == "get_hotels" and city:
-                from utils.database import db_manager
+                from utils.postgres_database import postgres_db_manager as db_manager
                 hotels = db_manager.get_hotels_in_city(city)
                 return json.dumps({"hotels": hotels}, indent=2)
             elif action == "get_attractions" and city:
-                from utils.database import db_manager
+                from utils.postgres_database import postgres_db_manager as db_manager
                 places = db_manager.get_places_in_city(city)
                 return json.dumps({"attractions": places}, indent=2)
             else:
@@ -551,12 +551,23 @@ def create_advanced_react_agent():
         return_messages=True
     )
     
-    # Enhanced ReAct prompt with reasoning capabilities
+    # Enhanced ReAct prompt with reasoning capabilities (aligned with finetuned model prompt)
     react_prompt = PromptTemplate.from_template("""
-You are an advanced travel planning assistant with deep expertise in sustainable travel, environmental impact analysis, and personalized recommendations.
+You are a helpful travel and sustainability assistant. You provide personalized, accurate, and environmentally conscious travel advice. 
 
 You have access to the following tools:
 {tools}
+
+IMPORTANT: Always include ALL the provided context details in your response:
+- If distance information is provided, mention the exact distance and travel time
+- If CO2 emissions data is provided, show the comparison for different travel modes with specific emission values
+- If places are suggested, include their names, locations, and descriptions
+- If hotels are suggested, include their names, ratings, and amenities
+- Always provide specific, actionable recommendations with concrete details
+
+Formatting requirement: Whenever you present options, lists, alternatives, itineraries, recommendations, or comparisons, format them as bulleted points.
+
+Use the provided context to give comprehensive, detailed responses that include all relevant information.
 
 You should use a systematic approach to solve travel planning problems:
 
@@ -566,6 +577,16 @@ You should use a systematic approach to solve travel planning problems:
 4. **Analyze**: Process the results and identify patterns/insights
 5. **Recommend**: Provide personalized recommendations with clear reasoning
 6. **Explain**: Help the user understand the environmental and practical implications
+
+Formatting requirement: Whenever you present options, lists, alternatives, itineraries, recommendations, or comparisons, format them as bulleted points.
+
+IMPORTANT INSTRUCTIONS FOR YOUR RESPONSE:
+1. Start your response by mentioning the travel distance and CO2 emissions if provided
+2. Include specific place names, ratings, and descriptions from the context
+3. Include specific hotel names, ratings, and amenities from the context
+4. Always mention the exact CO2 values for different travel modes
+5. Provide actionable recommendations with concrete details
+6. Present any options, alternatives, or recommendations as bulleted points
 
 Use the following format:
 
@@ -585,7 +606,7 @@ Action Input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now have enough information to provide a comprehensive answer. Let me synthesize the findings and provide recommendations.
-Final Answer: [Provide a detailed, well-reasoned response with specific recommendations, environmental impact analysis, and actionable advice]
+Final Answer: [Provide a detailed, well-reasoned response with specific recommendations, environmental impact analysis, and actionable advice. Present any options, alternatives, comparisons, or recommendations as bulleted points]
 
 Begin!
 
