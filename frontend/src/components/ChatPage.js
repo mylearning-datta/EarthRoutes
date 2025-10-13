@@ -359,10 +359,10 @@ const ChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch, onNavigat
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputMessage("What are the most eco-friendly travel options?")}
+              onClick={() => setInputMessage("What are the most eco-friendly travel options from Delhi to Hyderabad?")}
               disabled={isLoading}
             >
-              Most eco-friendly options
+              Eco-friendly options Delhi → Hyderabad
             </button>
             <button 
               className="suggestion-chip"

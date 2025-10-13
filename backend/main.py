@@ -4,7 +4,7 @@ Unified Travel Planning Backend with AI Agent
 Combines Node.js backend functionality with Python ReAct agent
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -23,6 +23,7 @@ import math
 from pathlib import Path
 
 from workflows.advanced_react_agent import process_travel_query_advanced_react
+from workflows.advanced_react_agent import process_travel_query_advanced_react_finetuned
 from config.settings import settings
 from services.google_maps import GoogleMapsService
 from services.co2_service import CO2EmissionService
@@ -660,9 +661,10 @@ async def chat_with_agent(
 @app.post("/api/chat/finetuned", response_model=ChatResponse)
 async def chat_with_finetuned_model(
     chat_request: ChatRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user),
+    variant: Optional[str] = Query(None, description="Model variant: 'community' or 'finetuned'. Default from env MODEL_MODE")
 ):
-    """Chat with the fine-tuned travel sustainability model"""
+    """Chat with the fine-tuned travel sustainability model through the same ReAct toolchain"""
     if not chat_request.message or not chat_request.message.strip():
         raise HTTPException(status_code=400, detail="Message is required")
     
@@ -683,25 +685,32 @@ async def chat_with_finetuned_model(
             session_id, "user", chat_request.message.strip()
         )
         
-        # Get the fine-tuned model service
-        model_service = get_finetuned_model_service()
-        
-        # Get prediction from the fine-tuned model
-        max_tokens = getattr(chat_request, 'max_tokens', 5000)
-        result = model_service.predict(chat_request.message.strip(), max_new_tokens=max_tokens)
-        
+        # Map external variants to internal service names is handled by the LLM wrapper.
+        # When variant is None, the wrapper falls back to env (MODEL_MODE/FINETUNED_MODEL_VARIANT).
+        # Accepted values here: 'community' | 'finetuned' | None
+        result = process_travel_query_advanced_react_finetuned(chat_request.message.strip(), variant=variant)
+
+        # Normalize intermediate_steps like the GPT path (tuples -> dicts)
+        intermediate_steps = result.get("intermediate_steps")
+        if intermediate_steps:
+            intermediate_steps = [
+                {"step": str(step[0]), "result": str(step[1])}
+                for step in intermediate_steps
+                if isinstance(step, tuple) and len(step) >= 2
+            ]
+
         # Add bot response to session
         postgres_db_manager.add_chat_message(
             session_id, "bot", result["response"], 
-            None, not result["success"]
+            result.get("travel_data"), result.get("error") is not None
         )
         
         return ChatResponse(
-            success=result["success"],
+            success=result.get("error") is None,
             response=result["response"],
-            travel_data=None,  # Fine-tuned model doesn't provide structured travel data
+            travel_data=result.get("travel_data"),
             error=result.get("error"),
-            intermediate_steps=None,
+            intermediate_steps=intermediate_steps,
             session_id=session_id
         )
     

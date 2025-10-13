@@ -41,7 +41,13 @@ class Settings:
     # Agent Configuration
     AGENT_MODEL = os.getenv("AGENT_MODEL", "gpt-4o")
     AGENT_TEMPERATURE = float(os.getenv("AGENT_TEMPERATURE", "0.1"))
-    AGENT_MAX_TOKENS = int(os.getenv("AGENT_MAX_TOKENS", "2000"))
+    AGENT_MAX_TOKENS = int(os.getenv("AGENT_MAX_TOKENS", "4000"))
+    AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "50"))
+    AGENT_MAX_EXECUTION_SECS = int(os.getenv("AGENT_MAX_EXECUTION_SECS", "600"))
+    AGENT_EARLY_STOPPING_METHOD = os.getenv("AGENT_EARLY_STOPPING_METHOD", "generate")
+
+    # Finetuned LLM generation limits
+    FINETUNED_MAX_NEW_TOKENS = int(os.getenv("FINETUNED_MAX_NEW_TOKENS", "800"))
 
     # Fine-tuned model selection (two variants only)
     FINETUNED_MODEL_VARIANT = os.getenv("FINETUNED_MODEL_VARIANT", "base_4bit")

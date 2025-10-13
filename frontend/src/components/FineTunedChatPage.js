@@ -247,10 +247,10 @@ const FineTunedChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch, 
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputMessage("Compare CO₂ emissions for different transport modes to Bangalore")}
+              onClick={() => setInputMessage("Compare CO₂ emissions for different transport modes from Bangalore  to  mumbai")}
               disabled={isLoading}
             >
-              CO₂ comparison to Bangalore
+              CO₂ comparison: Bangalore to Mumbai
             </button>
             <button 
               className="suggestion-chip"
@@ -261,24 +261,10 @@ const FineTunedChatPage = ({ onLogout, onNavigateToProfile, onNavigateToSearch, 
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputMessage("How can I offset my travel carbon footprint?")}
-              disabled={isLoading}
-            >
-              Carbon offset strategies
-            </button>
-            <button 
-              className="suggestion-chip"
               onClick={() => setInputMessage("What are green accommodation options in Goa?")}
               disabled={isLoading}
             >
               Green hotels in Goa
-            </button>
-            <button 
-              className="suggestion-chip"
-              onClick={() => setInputMessage("Plan a sustainable weekend trip from Pune")}
-              disabled={isLoading}
-            >
-              Sustainable weekend from Pune
             </button>
           </div>
         </div>

@@ -16,16 +16,58 @@ class VectorEmbeddingService:
         self.openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         self.embedding_model = "text-embedding-3-small"  # Cost-effective model
         self.embedding_dimensions = 1536
+        # Conservative character budget to stay well under token limits
+        self._max_chars = 6000
+
+    def _sanitize_for_embedding(self, text: str) -> str:
+        """Sanitize input before embedding to avoid passing entire ReAct prompts/scratchpads.
+        - Strip code fences/backticks
+        - If ReAct-style prompt is detected, extract only the user question
+        - If instruction blocks exist, keep instruction section
+        - Truncate to _max_chars
+        """
+        if not text:
+            return ""
+        s = text.strip()
+        # Strip wrapping backticks
+        if s.startswith('`') and s.endswith('`'):
+            s = s[1:-1].strip()
+        # Strip fenced code blocks
+        if s.startswith("```"):
+            s = s.split("\n", 1)[1] if "\n" in s else s.replace("```", "", 1)
+            if s.endswith("```"):
+                s = s.rsplit("```", 1)[0]
+            s = s.strip()
+        # Extract just the user question from ReAct prompt
+        try:
+            import re as _re
+            m = _re.search(r"Question:\s*(.*?)\nThought:", s, flags=_re.DOTALL)
+            if m:
+                s = m.group(1).strip()
+        except Exception:
+            pass
+        # If instruction-format exists, keep instruction body only
+        if "### INSTRUCTION" in s:
+            try:
+                body = s.split("### INSTRUCTION", 1)[1]
+                body = body.split("### RESPONSE", 1)[0]
+                s = body.strip().lstrip(":").strip()
+            except Exception:
+                pass
+        # Truncate
+        if len(s) > self._max_chars:
+            s = s[: self._max_chars]
+        return s
     
     def generate_embedding(self, text: str) -> Optional[List[float]]:
         """Generate embedding for a given text"""
         try:
             if not text or not text.strip():
                 return None
-            
+            sanitized = self._sanitize_for_embedding(text)
             response = self.openai_client.embeddings.create(
                 model=self.embedding_model,
-                input=text.strip(),
+                input=sanitized,
                 dimensions=self.embedding_dimensions
             )
             
@@ -135,7 +177,10 @@ class VectorEmbeddingService:
                 return []
             
             # Filter out empty texts
-            valid_texts = [text.strip() for text in texts if text and text.strip()]
+            valid_texts = []
+            for t in texts:
+                if t and t.strip():
+                    valid_texts.append(self._sanitize_for_embedding(t))
             if not valid_texts:
                 return [None] * len(texts)
             

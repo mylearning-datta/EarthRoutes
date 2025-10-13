@@ -212,7 +212,7 @@ The chat interface can handle various types of queries:
 
 - "What's the best way to travel from Delhi to Mumbai?"
 - "Compare CO2 emissions for different travel modes to Bangalore"
-- "What are the most eco-friendly travel options?"
+- "What are the most eco-friendly travel options from Delhi to Hyderabad?"
 - "How many trees would I need to plant to offset my flight?"
 - "Show me hotels in Mumbai"
 - "What places should I visit in Delhi?"

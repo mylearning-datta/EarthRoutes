@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class FineTunedModelService:
     """Service for the trained travel sustainability model."""
     
-    def __init__(self, model_path: str = None):
+    def __init__(self, model_path: str = None, variant: Optional[str] = None):
         """Initialize the model service."""
         # Lazy import to avoid circulars
         try:
@@ -44,16 +44,40 @@ class FineTunedModelService:
         except Exception:
             settings = None  # Fallback to env directly
 
-        # Resolve model path selection
-        self.model_variant = os.getenv("FINETUNED_MODEL_VARIANT", "base_4bit")
+        # Resolve model variant: only two supported values: 'community' | 'finetuned'
+        # Default from env MODEL_MODE, else 'community'
+        env_mode = os.getenv("MODEL_MODE", "community").strip().lower()
+        if variant and variant.strip().lower() in {"community", "finetuned"}:
+            self.model_variant = variant.strip().lower()
+        elif env_mode in {"community", "finetuned"}:
+            self.model_variant = env_mode
+        else:
+            self.model_variant = "community"
+
+        # Configure MLX paths based on chosen variant
+        # Community base (full MLX model dir)
+        community_path = "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit-mlx"
+        # Finetuned adapters (LoRA adapter dir)
+        finetuned_adapter_path = "/Users/arpita/Documents/project/finetuning/models/mistral-mlx-lora"
+
+        os.environ["USE_MLX"] = "true"
+        if self.model_variant == "finetuned":
+            os.environ["MODEL_MODE"] = "finetuned"
+            os.environ["MLX_MODEL"] = community_path
+            os.environ["MLX_ADAPTER_PATH"] = finetuned_adapter_path
+        else:
+            os.environ["MODEL_MODE"] = "community"
+            os.environ["MLX_MODEL"] = community_path
+            # Clear adapter path for community mode
+            os.environ.pop("MLX_ADAPTER_PATH", None)
+
+        logger.info(
+            f"Configured MLX for variant={self.model_variant} MLX_MODEL={os.environ.get('MLX_MODEL')} "
+            f"MLX_ADAPTER_PATH={os.environ.get('MLX_ADAPTER_PATH','')}"
+        )
+
+        # For non-MLX fallbacks, still set model_path to community path
         self.model_path = self._select_and_prepare_model_path(settings, model_path)
-        # Auto-set MLX based on variant preference
-        try:
-            auto_mlx = self.model_variant == "base_4bit"
-            os.environ["USE_MLX"] = "true" if auto_mlx else "false"
-            logger.info(f"USE_MLX auto-set to {os.environ['USE_MLX']} based on variant {self.model_variant}")
-        except Exception:
-            pass
         self.tokenizer = None
         self.model = None
         self.is_loaded = False
@@ -78,31 +102,8 @@ class FineTunedModelService:
 
     def _select_and_prepare_model_path(self, settings, override_model_path: Optional[str]) -> Path:
         """Select model path based on env/settings and ensure availability (extract zip if needed)."""
-        # Highest priority: explicit override via arg or FINETUNED_MODEL_PATH
-        env_override = os.getenv("FINETUNED_MODEL_PATH")
-        chosen_raw = override_model_path or env_override
-
-        if not chosen_raw and settings is not None:
-            # Variant-based selection from settings (two options only)
-            variant = os.getenv("FINETUNED_MODEL_VARIANT", getattr(settings, "FINETUNED_MODEL_VARIANT", "base_4bit"))
-            if variant == "colab_finetune":
-                extract_dir_raw = getattr(settings, "FINETUNED_MODEL_PATH_COLAB_EXTRACT", "/Users/arpita/Documents/project/finetuning/models/mistral-7b-finetune-4bit-colab")
-                target_dir = self._resolve_path(extract_dir_raw)
-                return target_dir
-            else:
-                chosen_raw = getattr(settings, "FINETUNED_MODEL_PATH_BASE_4BIT", "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit")
-
-        # Fallback if settings unavailable
-        if not chosen_raw:
-            variant = os.getenv("FINETUNED_MODEL_VARIANT", "base_4bit")
-            if variant == "colab_finetune":
-                extract_dir_raw = os.getenv("FINETUNED_MODEL_PATH_COLAB_EXTRACT", "/Users/arpita/Documents/project/finetuning/models/mistral-7b-finetune-4bit-colab")
-                target_dir = self._resolve_path(extract_dir_raw)
-                return target_dir
-            else:
-                chosen_raw = "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit"
-
-        return self._resolve_path(chosen_raw)
+        # For MLX we don't need a single model_path; return community path as base for non-MLX fallback
+        return self._resolve_path("/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit-mlx")
     
     def _init_rag_services(self):
         """Initialize RAG services for enhanced context."""
@@ -141,8 +142,9 @@ class FineTunedModelService:
                 # Simple switch: community vs finetuned
                 model_mode = os.getenv("MODEL_MODE", "community").lower()
                 if model_mode == "finetuned":
-                    base_id = os.getenv("MLX_BASE_MODEL", os.getenv("MLX_MODEL", "mlx-community/Mistral-7B-Instruct-v0.2-4bit"))
-                    adapter_path = os.getenv("MLX_ADAPTER_PATH", "").strip()
+                    # Load community base with local LoRA adapters
+                    base_id = os.getenv("MLX_MODEL", "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit-mlx")
+                    adapter_path = os.getenv("MLX_ADAPTER_PATH", "/Users/arpita/Documents/project/finetuning/models/mistral-mlx-lora").strip()
                     if not adapter_path:
                         logger.error("MODEL_MODE=finetuned but MLX_ADAPTER_PATH is not set")
                         self.is_loaded = False
@@ -167,7 +169,7 @@ class FineTunedModelService:
                     self.model, self.tokenizer = mlx_load(base_id, adapter_path=adapter_path)
                     logger.info("Applied MLX LoRA adapters successfully")
                 else:
-                    mlx_model_id = os.getenv("MLX_MODEL", "mlx-community/Mistral-7B-Instruct-v0.2-4bit")
+                    mlx_model_id = os.getenv("MLX_MODEL", "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit-mlx")
                     logger.info(f"Loading MLX community model: {mlx_model_id}")
                     self.model, self.tokenizer = mlx_load(mlx_model_id)
                 self.using_mlx = True
@@ -653,12 +655,20 @@ Response:
             "backend": "mlx" if getattr(self, "using_mlx", False) else "transformers"
         }
 
-# Global instance
-_finetuned_model_service = None
+# Global instances by variant
+_finetuned_model_services: Dict[str, FineTunedModelService] = {}
 
-def get_finetuned_model_service() -> FineTunedModelService:
-    """Get the global fine-tuned model service instance."""
-    global _finetuned_model_service
-    if _finetuned_model_service is None:
-        _finetuned_model_service = FineTunedModelService()
-    return _finetuned_model_service
+def get_finetuned_model_service(variant: Optional[str] = None) -> FineTunedModelService:
+    """Get a fine-tuned model service instance for the given variant (cached).
+    Supported variants: 'community' | 'finetuned'. If None, falls back to env MODEL_MODE.
+    """
+    # Resolve to supported set only
+    v_env = os.getenv("MODEL_MODE", "community").strip().lower()
+    v = (variant or v_env)
+    v = v.strip().lower() if v else "community"
+    if v not in {"community", "finetuned"}:
+        v = "community"
+
+    if v not in _finetuned_model_services:
+        _finetuned_model_services[v] = FineTunedModelService(variant=v)
+    return _finetuned_model_services[v]

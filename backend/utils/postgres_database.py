@@ -398,7 +398,7 @@ class PostgreSQLDatabaseManager:
                 SELECT name, rating, price_range, amenities, description, condition, 
                        total_reviews, is_sustainable
                 FROM hotels 
-                WHERE city = %s 
+                WHERE LOWER(city) = LOWER(%s)
                 ORDER BY rating DESC NULLS LAST
                 LIMIT 10
                 """
@@ -425,7 +425,7 @@ class PostgreSQLDatabaseManager:
                        best_time_to_visit, weekly_off, dslr_allowed, google_reviews_lakhs, 
                        establishment_year, zone, state, category, description
                 FROM places 
-                WHERE city = %s 
+                WHERE LOWER(city) = LOWER(%s)
                 ORDER BY google_review_rating DESC NULLS LAST
                 LIMIT 10
                 """
@@ -442,6 +442,117 @@ class PostgreSQLDatabaseManager:
             logger.error(f"Error getting places: {e}")
             return []
     
+    def get_hotels_by_location(self, location: str) -> List[Dict]:
+        """Get hotels by trying city, then state, then zone for the provided location name."""
+        try:
+            with self.get_connection() as conn:
+                # 1) Try exact city match
+                city_query = """
+                SELECT name, rating, price_range, amenities, description, condition, 
+                       total_reviews, is_sustainable
+                FROM hotels 
+                WHERE LOWER(city) = LOWER(%s)
+                ORDER BY rating DESC NULLS LAST
+                LIMIT 10
+                """
+                df = pd.read_sql_query(city_query, conn, params=(location,))
+                if not df.empty:
+                    df = df.where(pd.notnull(df), None).replace('NaN', None)
+                    return self._json_safe(df.to_dict('records'))
+
+                # 2) Try state match (join with places to infer state if hotels table lacks state)
+                state_query = """
+                SELECT h.name, h.rating, h.price_range, h.amenities, h.description, h.condition,
+                       h.total_reviews, h.is_sustainable
+                FROM hotels h
+                JOIN (
+                    SELECT DISTINCT city, state FROM places WHERE LOWER(state) = LOWER(%s)
+                ) p ON p.city = h.city
+                ORDER BY h.rating DESC NULLS LAST
+                LIMIT 10
+                """
+                df = pd.read_sql_query(state_query, conn, params=(location,))
+                if not df.empty:
+                    df = df.where(pd.notnull(df), None).replace('NaN', None)
+                    return self._json_safe(df.to_dict('records'))
+
+                # 3) Try zone match
+                zone_query = """
+                SELECT h.name, h.rating, h.price_range, h.amenities, h.description, h.condition,
+                       h.total_reviews, h.is_sustainable
+                FROM hotels h
+                JOIN (
+                    SELECT DISTINCT city, zone FROM places WHERE LOWER(zone) = LOWER(%s)
+                ) p ON p.city = h.city
+                ORDER BY h.rating DESC NULLS LAST
+                LIMIT 10
+                """
+                df = pd.read_sql_query(zone_query, conn, params=(location,))
+                if not df.empty:
+                    df = df.where(pd.notnull(df), None).replace('NaN', None)
+                    return self._json_safe(df.to_dict('records'))
+
+                return []
+        except Exception as e:
+            logger.error(f"Error getting hotels by location: {e}")
+            return []
+
+    def get_places_by_location(self, location: str) -> List[Dict]:
+        """Get places by trying city, then state, then zone for the provided location name."""
+        try:
+            with self.get_connection() as conn:
+                # 1) Try exact city match
+                city_query = """
+                SELECT name, type, significance, google_review_rating, is_sustainable, 
+                       sustainability_reason, time_needed_hrs, entrance_fee_inr, 
+                       best_time_to_visit, weekly_off, dslr_allowed, google_reviews_lakhs, 
+                       establishment_year, zone, state, category, description
+                FROM places 
+                WHERE LOWER(city) = LOWER(%s)
+                ORDER BY google_review_rating DESC NULLS LAST
+                LIMIT 10
+                """
+                df = pd.read_sql_query(city_query, conn, params=(location,))
+                if not df.empty:
+                    df = df.where(pd.notnull(df), None).replace('NaN', None)
+                    return self._json_safe(df.to_dict('records'))
+
+                # 2) Try state match
+                state_query = """
+                SELECT name, type, significance, google_review_rating, is_sustainable, 
+                       sustainability_reason, time_needed_hrs, entrance_fee_inr, 
+                       best_time_to_visit, weekly_off, dslr_allowed, google_reviews_lakhs, 
+                       establishment_year, zone, state, category, description
+                FROM places 
+                WHERE LOWER(state) = LOWER(%s)
+                ORDER BY google_review_rating DESC NULLS LAST
+                LIMIT 10
+                """
+                df = pd.read_sql_query(state_query, conn, params=(location,))
+                if not df.empty:
+                    df = df.where(pd.notnull(df), None).replace('NaN', None)
+                    return self._json_safe(df.to_dict('records'))
+
+                # 3) Try zone match
+                zone_query = """
+                SELECT name, type, significance, google_review_rating, is_sustainable, 
+                       sustainability_reason, time_needed_hrs, entrance_fee_inr, 
+                       best_time_to_visit, weekly_off, dslr_allowed, google_reviews_lakhs, 
+                       establishment_year, zone, state, category, description
+                FROM places 
+                WHERE LOWER(zone) = LOWER(%s)
+                ORDER BY google_review_rating DESC NULLS LAST
+                LIMIT 10
+                """
+                df = pd.read_sql_query(zone_query, conn, params=(location,))
+                if not df.empty:
+                    df = df.where(pd.notnull(df), None).replace('NaN', None)
+                    return self._json_safe(df.to_dict('records'))
+
+                return []
+        except Exception as e:
+            logger.error(f"Error getting places by location: {e}")
+            return []
     def get_sustainable_places_in_city(self, city: str) -> List[Dict]:
         """Get sustainable tourist places in a specific city"""
         try:
@@ -452,7 +563,7 @@ class PostgreSQLDatabaseManager:
                        best_time_to_visit, weekly_off, dslr_allowed, google_reviews_lakhs, 
                        establishment_year, zone, state, category, description
                 FROM places 
-                WHERE city = %s AND is_sustainable = TRUE
+                WHERE LOWER(city) = LOWER(%s) AND is_sustainable = TRUE
                 ORDER BY google_review_rating DESC NULLS LAST
                 LIMIT 10
                 """

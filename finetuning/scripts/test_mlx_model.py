@@ -116,7 +116,6 @@ def benchmark_performance(model, tokenizer, prompt: str, num_runs: int = 5):
                 tokenizer,
                 prompt=prompt,
                 max_tokens=100,
-                temp=0.7,
                 verbose=False
             )
             end_time = time.time()
