@@ -11,6 +11,38 @@ Project root: `/Users/arpita/Documents/project`
 
 ---
 
+## Project Structure
+```text
+project/
+├─ backend/
+│  ├─ config/
+│  ├─ scripts/
+│  ├─ services/
+│  ├─ tools/
+│  ├─ utils/
+│  ├─ workflows/
+│  └─ venv/
+├─ frontend/
+│  ├─ public/
+│  └─ src/
+│     ├─ components/
+│     └─ services/
+├─ finetuning/
+│  ├─ data/
+│  │  ├─ raw/
+│  │  └─ processed/
+│  ├─ models/
+│  ├─ results/
+│  └─ scripts/
+├─ db/
+│  └─ postgres/            # local PostgreSQL data dir
+├─ data/                   # CSV and other datasets
+├─ logs/                   # backend.log, frontend.log
+└─ scripts/                # setup/start/utility scripts
+```
+
+---
+
 ## 1) Set up PostgreSQL (with pgvector)
 
 Recommended (macOS):
@@ -156,3 +188,4 @@ python start_backend.py
 - `backend/scripts/populate_embeddings.py`: generate embeddings for places/hotels
 - `backend/scripts/populate_embeddings_batch.py`: embeddings via OpenAI Batch API
 - `scripts/start.sh`: start Postgres, backend, and frontend with logs
+ - `scripts/init_project_structure.sh`: bootstrap directory structure and placeholders
