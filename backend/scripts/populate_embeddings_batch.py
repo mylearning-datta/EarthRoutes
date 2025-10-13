@@ -8,12 +8,22 @@ import sys
 from pathlib import Path
 import logging
 import time
+from contextlib import nullcontext
 
 # Add the backend directory to the Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from utils.postgres_database import postgres_db_manager
 from services.batch_embedding_service import batch_embedding_service
+
+# Optional progress bar
+try:
+    from tqdm import tqdm
+    def _progress(iterable, total=None, desc=None):
+        return tqdm(iterable, total=total, desc=desc)
+except Exception:  # pragma: no cover
+    def _progress(iterable, total=None, desc=None):
+        return iterable
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -64,7 +74,7 @@ def populate_place_embeddings_batch():
             if result["success"]:
                 # Update database with embeddings
                 update_count = 0
-                for item in result["results"]:
+                for item in _progress(result["results"], total=len(result["results"]), desc="Places embeddings"):
                     cursor.execute(
                         "UPDATE places SET embedding = %s WHERE id = %s",
                         (item["embedding"], item["id"])
@@ -129,7 +139,7 @@ def populate_hotel_embeddings_batch():
             if result["success"]:
                 # Update database with embeddings
                 update_count = 0
-                for item in result["results"]:
+                for item in _progress(result["results"], total=len(result["results"]), desc="Hotels embeddings"):
                     cursor.execute(
                         "UPDATE hotels SET embedding = %s WHERE id = %s",
                         (item["embedding"], item["id"])

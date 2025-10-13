@@ -37,3 +37,6 @@ alembic>=1.13.0
 # Vector Embeddings
 pgvector>=0.2.0
 langchain-postgres>=0.0.1
+ 
+# Utilities
+tqdm>=4.66.0
