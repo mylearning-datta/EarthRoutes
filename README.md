@@ -103,25 +103,7 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 
 ---
 
-## 3) Load the database (CSV → PostgreSQL)
-Load `data/hotel_details.csv` and `data/Top Indian Places to Visit.csv` into PostgreSQL with a clean schema and indexes.
-```bash
-# From project root
-source backend/venv/bin/activate
-python backend/scripts/load_csv_to_postgres.py
-```
-This creates tables (`hotels`, `places`, `cities`), clears existing rows, loads fresh data, and prints a summary.
-
-### Populate vector embeddings (recommended)
-Populate embeddings so semantic search and recommendations work:
-```bash
-python backend/scripts/populate_embeddings_batch.py
-```
-Note: requires `OPENAI_API_KEY` in `backend/.env`.
-
----
-
-## 4) Download local MLX model
+## 3) Download local MLX model
 Install MLX requirements and download the quantized Mistral model to `finetuning/models/mistral-7b-instruct-4bit-mlx`.
 ```bash
 # From project root
@@ -140,7 +122,7 @@ python finetuning/scripts/download_mlx_model.py \
 
 ---
 
-## 5) Run the backend
+## 4) Run the backend
 ### Quick start (starts Postgres + backend + frontend)
 ```bash
 # From project root
