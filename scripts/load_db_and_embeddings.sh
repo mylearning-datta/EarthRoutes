@@ -4,7 +4,7 @@
 # - Starts PostgreSQL using db/postgres if not already running
 # - Ensures backend venv and deps
 # - Runs backend/scripts/load_csv_to_postgres.py
-# - Runs backend/scripts/populate_embeddings.py
+# - Runs backend/scripts/populate_embeddings_batch.py
 
 set -e
 
@@ -80,7 +80,7 @@ cd "$PROJECT_DIR"
 echo -e "${BLUE}📥 Loading CSVs into PostgreSQL...${NC}"
 python backend/scripts/load_csv_to_postgres.py
 
-echo -e "${BLUE}🧠 Populating embeddings (standard path)...${NC}"
-python backend/scripts/populate_embeddings.py
+echo -e "${BLUE}🧠 Populating embeddings (batch)...${NC}"
+python backend/scripts/populate_embeddings_batch.py
 
 echo -e "${GREEN}🎉 Done: Data loaded and embeddings populated.${NC}"
