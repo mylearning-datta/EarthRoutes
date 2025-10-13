@@ -1,0 +1,18 @@
+{
+  "model_name": "mlx-community/Mistral-7B-Instruct-v0.2-4bit",
+  "max_length": 1024,
+  "batch_size": 1,
+  "num_epochs": 3,
+  "learning_rate": 0.0002,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.05,
+  "target_modules": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj"
+  ],
+  "framework": "mlx",
+  "training_data_file": "finetuning/data/processed/mlx_data"
+}
