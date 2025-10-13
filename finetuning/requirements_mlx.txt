@@ -19,3 +19,6 @@ seaborn>=0.12.0
 # Optional: for data preprocessing
 pandas>=2.0.0
 scikit-learn>=1.3.0
+
+# Model download
+huggingface_hub>=0.24.0
