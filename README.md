@@ -189,3 +189,37 @@ python start_backend.py
 - `backend/scripts/populate_embeddings_batch.py`: embeddings via OpenAI Batch API
 - `scripts/start.sh`: start Postgres, backend, and frontend with logs
  - `scripts/init_project_structure.sh`: bootstrap directory structure and placeholders
+
+---
+
+## Optional: Finetuning (MLX + LoRA)
+You can fine-tune the Mistral 7B Instruct (4-bit MLX) model with LoRA on macOS (Apple Silicon) using MLX.
+
+1) Prepare training data
+```bash
+source backend/venv/bin/activate
+pip install -r finetuning/requirements_mlx.txt
+python finetuning/scripts/build_dataset.py
+```
+
+2) Train (via config)
+```bash
+python finetuning/scripts/train_mlx.py --config finetuning/configs/train_mlx.yaml
+```
+
+Or train via CLI flags
+```bash
+python finetuning/scripts/train_mlx.py \
+  --model mlx-community/Mistral-7B-Instruct-v0.2-4bit \
+  --output-dir finetuning/models/mistral-mlx-lora \
+  --batch-size 1 --epochs 3 --lr 2e-4 --max-length 1024 \
+  --lora-r 8 --lora-alpha 16 --lora-dropout 0.05
+```
+
+3) Use finetuned adapters in backend
+Set in `backend/.env`:
+```env
+MODEL_MODE=finetuned
+MLX_MODEL=/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit-mlx
+MLX_ADAPTER_PATH=/Users/arpita/Documents/project/finetuning/models/mistral-mlx-lora
+```
