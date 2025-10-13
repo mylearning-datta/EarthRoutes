@@ -16,6 +16,11 @@ NC='\033[0m' # No Color
 # Get the project directory
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 POSTGRES_DATA_DIR="$PROJECT_DIR/db/postgres"
+LOG_DIR="$PROJECT_DIR/logs"
+
+# Ensure logs directory and files exist
+mkdir -p "$LOG_DIR"
+touch "$LOG_DIR/backend.log" "$LOG_DIR/frontend.log"
 
 # Function to check if a command exists
 command_exists() {
