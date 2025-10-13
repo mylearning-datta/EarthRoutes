@@ -60,6 +60,34 @@ Deactivate anytime with:
 ```bash
 deactivate
 ```
+
+If `venv` is missing on your system
+```bash
+# Check if venv is available
+python3 -m venv --help || true
+
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install -y python3-venv
+
+# Fedora/RHEL (use yum if dnf not available)
+sudo dnf install -y python3-venv || sudo yum install -y python3-venv
+
+# Arch Linux (venv comes with python)
+sudo pacman -Syu python
+
+# macOS (install Python 3 which includes venv)
+brew install python  # or download from python.org
+
+# If needed, bootstrap pip and venv helpers
+python3 -m ensurepip --upgrade || true
+```
+
+Alternative: use virtualenv (if you prefer)
+```bash
+python3 -m pip install --user virtualenv
+python3 -m virtualenv backend/venv
+source backend/venv/bin/activate
+```
 Create your environment file if missing:
 ```bash
 cp env.example .env
