@@ -21,6 +21,7 @@ import requests
 import json
 import math
 from pathlib import Path
+import time
 
 from workflows.advanced_react_agent import process_travel_query_advanced_react
 from workflows.advanced_react_agent import process_travel_query_advanced_react_finetuned
@@ -43,8 +44,11 @@ app = FastAPI(
 async def _preload_finetuned_model():
     try:
         # This will construct and load the model service once
+        t0 = time.perf_counter()
         _ = get_finetuned_model_service()
+        t1 = time.perf_counter()
         print("Finetuned model preload triggered (MLX/transformers)")
+        print(f"[timer] preload_time={t1 - t0:.3f}s")
     except Exception as e:
         print(f"Warning: Finetuned model preload failed: {e}")
 
@@ -688,7 +692,9 @@ async def chat_with_finetuned_model(
         # Map external variants to internal service names is handled by the LLM wrapper.
         # When variant is None, the wrapper falls back to env (MODEL_MODE/FINETUNED_MODEL_VARIANT).
         # Accepted values here: 'community' | 'finetuned' | None
+        t0 = time.perf_counter()
         result = process_travel_query_advanced_react_finetuned(chat_request.message.strip(), variant=variant)
+        t1 = time.perf_counter()
 
         # Normalize intermediate_steps like the GPT path (tuples -> dicts)
         intermediate_steps = result.get("intermediate_steps")
@@ -705,7 +711,7 @@ async def chat_with_finetuned_model(
             result.get("travel_data"), result.get("error") is not None
         )
         
-        return ChatResponse(
+        resp = ChatResponse(
             success=result.get("error") is None,
             response=result["response"],
             travel_data=result.get("travel_data"),
@@ -713,6 +719,8 @@ async def chat_with_finetuned_model(
             intermediate_steps=intermediate_steps,
             session_id=session_id
         )
+        print(f"[timer] finetuned_handler_time={t1 - t0:.3f}s")
+        return resp
     
     except Exception as e:
         return ChatResponse(

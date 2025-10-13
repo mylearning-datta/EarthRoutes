@@ -1,0 +1,147 @@
+{
+  "input": "finetuning/results/model_comparison_local_4.json",
+  "models": [
+    "gpt",
+    "mistral_community",
+    "mistral_finetuned"
+  ],
+  "summary": {
+    "mode_choice_total": 2,
+    "mode_choice_consistent": 1,
+    "pois_total": 2,
+    "pois_exact_match": 0,
+    "pois_avg_jaccard": 0.667
+  },
+  "details": [
+    {
+      "prompt_id": "prompt_0",
+      "task": "MODE_CHOICE",
+      "prompt": "### TASK: MODE_CHOICE\n### INSTRUCTION:\nChoose the most sustainable transport mode from Ahmedabad to Delhi.\n### RESPONSE:",
+      "models": {
+        "gpt": {
+          "time": 35.927,
+          "response": "To travel from Ahmedabad to Delhi, the distance is approximately **775.71 km**. Here are the CO2 emissions for various transport modes:\n\n- **Bicycle**: 0.0 kg CO2 (Duration: 2 days 3 hrs)\n- **Walking**: 0.0 kg CO2 (Duration: 6 days 11 hrs)\n- **Electric Train**: 23.27 kg CO2 (Duration: 9 hrs 42 mins)\n- **Diesel Train**: 46.54 kg CO2 (Duration: 9 hrs 42 mins)\n- **Electric Car**: 54.30 kg CO2 (Duration: 12 hrs 56 mins)\n- **Shared Bus**: 62.06 kg CO2 (Duration: 15 hrs 31 mins)\n- **Petrol Car**: 120.24 kg CO2 (Duration: 12 hrs 56 mins)\n- **Diesel Car**: 131.09 kg CO2 (Duration: 12 hrs 56 mins)\n- **Flight**: 197.81 kg CO2 (Duration: 3 hrs 33 mins)\n\n### Recommendations for Sustainable Travel:\n\n1. **Most Eco-Friendly Option**: \n   - **Bicycle**\n     - **CO2 Emissions**: 0.0 kg\n     - **Duration**: 2 days 3 hrs\n     - **Reasoning**: Lowest CO2 emissions, requiring no trees to offset.\n\n2. **Balanced Option**:\n   - **Electric Train**\n     - **CO2 Emissions**: 23.27 kg\n     - **Duration**: 9 hrs 42 mins\n     - **Reasoning**: Good balance between travel time and environmental impact.\n\n3. **Fastest Option**:\n   - **Flight**\n     - **CO2 Emissions**: 197.81 kg\n     - **Duration**: 3 hrs 33 mins\n     - **Reasoning**: Shortest travel time, but with the highest CO2 emissions.\n\n### Eco-Friendly Places to Visit in Delhi:\n\n- **Akshardham Temple**\n  - **Type**: Temple\n  - **Rating**: 4.6\n  - **Significance**: Low energy usage, promotes passive and spiritual activities.\n  - **Entrance Fee**: ₹60\n  - **Best Time to Visit**: Afternoon\n\n- **Sunder Nursery**\n  - **Type**: Park\n  - **Rating**: 4.6\n  - **Significance**: Green space, carbon sequestration, low emissions.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Afternoon\n\n- **Lodhi Garden**\n  - **Type**: Park\n  - **Rating**: 4.5\n  - **Significance**: Green space, carbon sequestration, low emissions.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: All day\n\n- **Lotus Temple**\n  - **Type**: Temple\n  - **Rating**: 4.5\n  - **Significance**: Low energy usage, promotes passive and spiritual activities.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Evening\n\n- **Agrasen ki Baoli**\n  - **Type**: Stepwell\n  - **Rating**: 4.2\n  - **Significance**: Historic water-saving architecture.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Afternoon\n\n### Conclusion:\nFor the most sustainable travel option, consider taking the **Bicycle** or **Electric Train**. If time is a priority, the **Flight** is the fastest but comes with a significant environmental cost. While in Delhi, visit eco-friendly attractions like **Akshardham Temple** and **Sunder Nursery** to enjoy your trip while minimizing your environmental impact.",
+          "extracted_mode": "train_electric"
+        },
+        "mistral_community": {
+          "time": 84.976,
+          "response": "Based on your request, I have analyzed the travel options from Ahmedabad to Delhi and found the following recommendations:\n\n1. **Most Eco-Friendly Option**: Travel by bicycle. This option produces zero CO2 emissions and requires no trees to offset. It is the most sustainable choice for your journey.\n2. **Fastest Option**: Travel by flight. This option has the shortest travel time of 3 hours and 33 minutes.\n3. **Balanced Option**: Travel by electric train. This option offers a good balance between time and environmental impact.\n4. **Eco-Friendly Places to Visit**: During your stay in Delhi, consider visiting the following eco-friendly places:\n   - Akshardham Temple\n   -",
+          "extracted_mode": "train_electric"
+        },
+        "mistral_finetuned": {
+          "time": 80.11,
+          "response": "Based on your request, I have analyzed the travel options from Ahmedabad to Delhi and found the following recommendations:\n\n1. **Most Eco-Friendly Option**: Travel by bicycle. This option produces zero CO2 emissions and requires no trees to offset. It is the most sustainable choice for your journey.\n2. **Fastest Option**: Travel by flight. This option has the shortest travel time of 3 hours and 33 minutes.\n3. **Balanced Option**: Travel by electric train. This option offers a good balance between time and environmental impact.\n4. **Eco-Friendly Places to Visit**: During your stay in Delhi, consider visiting the following eco-friendly places:\n   - Akshardham Temple\n   -",
+          "extracted_mode": "train_electric"
+        }
+      },
+      "mode_consistent_all": true,
+      "mode_values": {
+        "gpt": "train_electric",
+        "mistral_community": "train_electric",
+        "mistral_finetuned": "train_electric"
+      }
+    },
+    {
+      "prompt_id": "prompt_1",
+      "task": "SUSTAINABLE_POIS",
+      "prompt": "### TASK: SUSTAINABLE_POIS\n### INSTRUCTION:\nRecommend eco-friendly places in Kolkata.\n### RESPONSE:",
+      "models": {
+        "gpt": {
+          "time": 10.901,
+          "response": "Here are some eco-friendly attractions in Kolkata that you can visit:\n\n- **Belur Math**\n  - **Type**: Religious Site\n  - **Rating**: 4.7\n  - **Sustainability Reason**: Often protected with minimal infrastructure (heritage).\n  - **Time Needed**: 1.5 hours\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Morning\n  - **Description**: A serene place known for its beautiful architecture and spiritual ambiance.\n\n- **Dakshineswar Kali Temple**\n  - **Type**: Temple\n  - **Rating**: 4.7\n  - **Sustainability Reason**: Low energy usage, promotes passive and spiritual activities.\n  - **Time Needed**: 1 hour\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Morning\n  - **Description**: A famous temple dedicated to Goddess Kali, known for its spiritual significance.\n\n- **Howrah Bridge**\n  - **Type**: Architectural Landmark\n  - **Rating**: 4.6\n  - **Sustainability Reason**: Typically pedestrian-friendly with minimal emissions.\n  - **Time Needed**: 0.5 hours\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Anytime\n  - **Description**: An iconic symbol of Kolkata, offering stunning views and a vibrant atmosphere.\n\n- **Kalighat Kali Temple**\n  - **Type**: Temple\n  - **Rating**: 4.4\n  - **Sustainability Reason**: Low energy usage, promotes passive and spiritual activities.\n  - **Time Needed**: 1 hour\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Morning\n  - **Description**: Another significant temple dedicated to Goddess Kali, known for its rich history and devotion.\n\nThese attractions not only offer a glimpse into the cultural and spiritual heritage of Kolkata but also align with sustainable practices, making them ideal choices for eco-conscious travelers. Enjoy your visit!",
+          "extracted_places": [
+            "Belur Math",
+            "Rating",
+            "Dakshineswar Kali Temple",
+            "Howrah Bridge",
+            "Kalighat Kali Temple"
+          ]
+        },
+        "mistral_community": {
+          "time": 37.388,
+          "response": "1. Belur Math: A beautiful and spiritual place located in the Eastern part of Kolkata. It is a monastery and an architectural masterpiece that promotes peace and tranquility. The place is eco-friendly due to its minimal infrastructure and low energy usage. It takes approximately 1.5 hours to visit and is open all days of the week. The entrance fee is free.\n2. Dakshineswar Kali Temple: A famous temple dedicated to Goddess Kali, located in the Eastern part of Kolkata. It is an architectural marvel and a spiritual hub that promotes peace and devotion. The place is eco-friendly due to its low energy usage and promotion of passive activities. It takes approximately 1 hour to visit and is open all days of the week. The entrance fee is free.\n3. Howrah Bridge: A historic and iconic bridge that spans the Hooghly River in Eastern Kolkata. It is a pedestrian-friendly structure that offers stunning views of the river and the city. The place",
+          "extracted_places": [
+            "Belur Math",
+            "Dakshineswar Kali Temple",
+            "Howrah Bridge"
+          ]
+        },
+        "mistral_finetuned": {
+          "time": 37.394,
+          "response": "1. Belur Math: A beautiful and spiritual place located in the Eastern part of Kolkata. It is a monastery and an architectural masterpiece that promotes peace and tranquility. The place is eco-friendly due to its minimal infrastructure and low energy usage. It takes approximately 1.5 hours to visit and is open all days of the week. The entrance fee is free.\n2. Dakshineswar Kali Temple: A famous temple dedicated to Goddess Kali, located in the Eastern part of Kolkata. It is an architectural marvel and a spiritual hub that promotes peace and devotion. The place is eco-friendly due to its low energy usage and promotion of passive activities. It takes approximately 1 hour to visit and is open all days of the week. The entrance fee is free.\n3. Howrah Bridge: A historic and iconic bridge that spans the Hooghly River in Eastern Kolkata. It is a pedestrian-friendly structure that offers stunning views of the river and the city. The place",
+          "extracted_places": [
+            "Belur Math",
+            "Dakshineswar Kali Temple",
+            "Howrah Bridge"
+          ]
+        }
+      },
+      "pois_avg_jaccard": 0.7333333333333334,
+      "pois_exact_match_all": false
+    },
+    {
+      "prompt_id": "prompt_2",
+      "task": "MODE_CHOICE",
+      "prompt": "### TASK: MODE_CHOICE\n### INSTRUCTION:\nChoose the most sustainable transport mode from Ahmedabad to Bangalore.\n### RESPONSE:",
+      "models": {
+        "gpt": {
+          "time": 25.6,
+          "response": "To travel from Ahmedabad to Bangalore, the distance is approximately **1237.04 km**. Here are the CO2 emissions and travel durations for various transport modes:\n\n- **Bicycle**\n  - CO2 Emissions: **0.0 kg**\n  - Duration: **3 days 10 hrs**\n  \n- **Walking**\n  - CO2 Emissions: **0.0 kg**\n  - Duration: **10 days 7 hrs**\n  \n- **Electric Train**\n  - CO2 Emissions: **37.11 kg**\n  - Duration: **15 hrs 28 mins**\n  \n- **Diesel Train**\n  - CO2 Emissions: **74.22 kg**\n  - Duration: **15 hrs 28 mins**\n  \n- **Electric Car**\n  - CO2 Emissions: **86.59 kg**\n  - Duration: **20 hrs 37 mins**\n  \n- **Shared Bus**\n  - CO2 Emissions: **98.96 kg**\n  - Duration: **1 day**\n  \n- **Petrol Car**\n  - CO2 Emissions: **191.74 kg**\n  - Duration: **20 hrs 37 mins**\n  \n- **Diesel Car**\n  - CO2 Emissions: **209.06 kg**\n  - Duration: **20 hrs 37 mins**\n  \n- **Flight**\n  - CO2 Emissions: **315.45 kg**\n  - Duration: **4 hrs 28 mins**\n\n### Recommendations for Sustainable Travel:\n- **Most Eco-Friendly Option**: \n  - **Bicycle**\n    - **Reasoning**: Lowest CO2 emissions at **0.0 kg**, requiring **0 trees** to offset. However, this option is impractical for long-distance travel.\n  \n- **Balanced Option**: \n  - **Electric Train**\n    - **Reasoning**: Good balance between time (**15 hrs 28 mins**) and environmental impact (**37.11 kg CO2**). This is the most sustainable motorized option.\n\n- **Fastest Option**: \n  - **Flight**\n    - **Reasoning**: Shortest travel time of **4 hrs 28 mins**, but with the highest CO2 emissions (**315.45 kg**).\n\n### Eco-Friendly Places to Visit in Bangalore:\n1. **ISKCON Temple Bangalore**\n   - **Type**: Temple\n   - **Rating**: 4.6\n   - **Sustainability Reason**: Low energy usage, promotes passive and spiritual activities.\n   - **Time Needed**: 1 hour\n   - **Best Time to Visit**: Evening\n\n2. **Lalbagh Botanical Garden**\n   - **Type**: Botanical Garden\n   - **Rating**: 4.4\n   - **Sustainability Reason**: Supports biodiversity, green space.\n   - **Time Needed**: 1.5 hours\n   - **Entrance Fee**: ₹20\n   - **Best Time to Visit**: Evening\n\n3. **Cubbon Park**\n   - **Type**: Park\n   - **Rating**: 4.4\n   - **Sustainability Reason**: Green space, carbon sequestration, low emissions.\n   - **Time Needed**: 1 hour\n   - **Entrance Fee**: Free\n\n### Conclusion:\nFor a sustainable journey from Ahmedabad to Bangalore, consider taking the **Electric Train** for a balance of time and environmental impact. While cycling is the most eco-friendly option, it may not be practical for such a long distance. Enjoy your travels and the eco-friendly attractions in Bangalore!",
+          "extracted_mode": "train_electric"
+        },
+        "mistral_community": {
+          "time": 134.289,
+          "response": "Based on the information provided, the most eco-friendly transport mode from Ahmedabad to Bangalore is by bicycle. This option produces 0.0 kg CO2 emissions and requires no trees to offset. By choosing this mode, you will contribute significantly to reducing your carbon footprint. Additionally, there are several eco-friendly places to visit in Bangalore, such as ISKCON Temple Bangalore, Lalbagh Botanical Garden, and Cubbon Park. These locations have minimal environmental impact and promote eco-friendly tourism.",
+          "extracted_mode": "electric_car"
+        },
+        "mistral_finetuned": {
+          "time": 125.592,
+          "response": "The most eco-friendly transport mode from Ahmedabad to Bangalore is to travel by bicycle, with 0.0 kg CO2 emissions and no trees needed to offset. This is a great choice for eco-conscious travelers. Additionally, I recommend visiting the following sustainable places in Bangalore:\n\n1. ISKCON Temple Bangalore: A religious temple with low energy usage and passive activities.\n2. Lalbagh Botanical Garden: A nature reserve that supports biodiversity and green space.\n3. Cubbon Park: A park with green space, carbon sequestration, and low emissions.\n\nThese locations have minimal environmental impact and promote eco-friendly tourism.",
+          "extracted_mode": "bicycle"
+        }
+      },
+      "mode_consistent_all": false,
+      "mode_values": {
+        "gpt": "train_electric",
+        "mistral_community": "electric_car",
+        "mistral_finetuned": "bicycle"
+      }
+    },
+    {
+      "prompt_id": "prompt_3",
+      "task": "SUSTAINABLE_POIS",
+      "prompt": "### TASK: SUSTAINABLE_POIS\n### INSTRUCTION:\nRecommend eco-friendly places in Hyderabad.\n### RESPONSE:",
+      "models": {
+        "gpt": {
+          "time": 10.841,
+          "response": "Here are some eco-friendly attractions in Hyderabad that you can visit:\n\n- **Birla Mandir**\n  - **Type**: Temple\n  - **Significance**: Religious\n  - **Rating**: 4.7\n  - **Sustainability Reason**: Low energy usage, promotes passive and spiritual activities\n  - **Time Needed**: 1 hour\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: All day\n\n- **Hussain Sagar Lake**\n  - **Type**: Lake\n  - **Significance**: Scenic\n  - **Rating**: 4.3\n  - **Sustainability Reason**: Natural body, passive recreation\n  - **Time Needed**: 1 hour\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Evening\n\nThese attractions are not only enjoyable but also promote sustainability through their low environmental impact. \n\n### Recommendations:\n- **Visit Birla Mandir** for a serene experience and spiritual reflection, especially in the early morning or late evening when it is less crowded.\n- **Enjoy a stroll around Hussain Sagar Lake** in the evening to appreciate the natural beauty and engage in passive recreational activities like walking or picnicking.\n\nBoth locations are ideal for those looking to enjoy Hyderabad while being mindful of their environmental footprint.",
+          "extracted_places": [
+            "Birla Mandir",
+            "Significance",
+            "Rating",
+            "Hussain Sagar Lake",
+            "Visit Birla Mandir"
+          ]
+        },
+        "mistral_community": {
+          "time": 60.626,
+          "response": "To explore eco-friendly places in Hyderabad, consider visiting the following attractions:\n\n1. Birla Mandir: A beautiful temple known for its spiritual significance and low energy usage.\n2. Hussain Sagar Lake: A serene natural body of water where you can enjoy passive recreation.\n\nThese recommendations are based on the provided context and are eco-friendly as they promote sustainable practices.\n\nAdditionally, the environmental impact of visiting these places is relatively low compared to other attractions. For instance, Birla Mandir uses less energy due to its passive design, while Hussain Sagar Lake is a natural body of water that does not require significant energy inputs for maintenance.\n\nBy choosing these eco-friendly places, you'll be able to enjoy Hyderabad's rich cultural and natural offerings while minimizing your carbon footprint.\n\nIf you're interested in other attractions or have specific travel requirements, please let me know and I'll be happy to help you plan a more comprehensive and sustainable itinerary.",
+          "extracted_places": [
+            "Birla Mandir",
+            "Hussain Sagar Lake"
+          ]
+        },
+        "mistral_finetuned": {
+          "time": 60.713,
+          "response": "To explore eco-friendly places in Hyderabad, consider visiting the following attractions:\n\n1. Birla Mandir: A beautiful temple known for its spiritual significance and low energy usage.\n2. Hussain Sagar Lake: A serene natural body of water where you can enjoy passive recreation.\n\nThese recommendations are based on the provided context and are eco-friendly as they promote sustainable practices.\n\nAdditionally, the environmental impact of visiting these places is relatively low compared to other attractions. For instance, Birla Mandir uses less energy due to its passive design, while Hussain Sagar Lake is a natural body of water that does not require significant energy inputs for maintenance.\n\nBy choosing these eco-friendly places, you'll be able to enjoy Hyderabad's rich cultural and natural offerings while minimizing your carbon footprint.\n\nIf you're interested in other attractions or have specific travel requirements, please let me know and I'll be happy to help you plan a more comprehensive and sustainable itinerary.",
+          "extracted_places": [
+            "Birla Mandir",
+            "Hussain Sagar Lake"
+          ]
+        }
+      },
+      "pois_avg_jaccard": 0.6,
+      "pois_exact_match_all": false
+    }
+  ]
+}

@@ -10,6 +10,7 @@ from typing import Dict, Optional, List, Any
 import os
 import logging
 import re
+import time
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -85,8 +86,14 @@ class FineTunedModelService:
         self.semantic_search = None
         self.co2_service = None
         self.maps_service = None
+        t_start = time.perf_counter()
         self._init_rag_services()
+        t_rag = time.perf_counter()
         self._load_model()
+        t_loaded = time.perf_counter()
+        logger.info(
+            f"[timer] FineTunedModelService init: rag_init={t_rag - t_start:.3f}s, model_load={t_loaded - t_rag:.3f}s, total={t_loaded - t_start:.3f}s"
+        )
         # Default backend flag if not set by loader
         if not hasattr(self, "using_mlx"):
             self.using_mlx = False
@@ -133,6 +140,7 @@ class FineTunedModelService:
     
     def _load_model(self):
         """Load the trained model and tokenizer."""
+        t_load_start = time.perf_counter()
         use_mlx = os.getenv("USE_MLX", "false").lower() in {"1", "true", "yes"}
         if use_mlx:
             if not MLX_AVAILABLE:
@@ -166,15 +174,19 @@ class FineTunedModelService:
                         logger.debug(f"Adapter file introspection skipped: {_e}")
 
                     logger.info(f"Loading MLX base model '{base_id}' with adapters from '{adapter_path}'")
+                    t0 = time.perf_counter()
                     self.model, self.tokenizer = mlx_load(base_id, adapter_path=adapter_path)
+                    logger.info(f"[timer] MLX base+adapters load={time.perf_counter() - t0:.3f}s")
                     logger.info("Applied MLX LoRA adapters successfully")
                 else:
                     mlx_model_id = os.getenv("MLX_MODEL", "/Users/arpita/Documents/project/finetuning/models/mistral-7b-instruct-4bit-mlx")
                     logger.info(f"Loading MLX community model: {mlx_model_id}")
+                    t0 = time.perf_counter()
                     self.model, self.tokenizer = mlx_load(mlx_model_id)
+                    logger.info(f"[timer] MLX community load={time.perf_counter() - t0:.3f}s")
                 self.using_mlx = True
                 self.is_loaded = True
-                logger.info("MLX model loaded successfully")
+                logger.info(f"[timer] MLX total_load={time.perf_counter() - t_load_start:.3f}s")
                 return
             except Exception as e:
                 logger.error(f"Failed to load MLX model: {e}")
@@ -225,16 +237,20 @@ class FineTunedModelService:
 
                 logger.info(f"Using base model for adapter: {base_model_name}")
 
+                t0 = time.perf_counter()
                 base_model = AutoModelForCausalLM.from_pretrained(
                     base_model_name,
                     torch_dtype=torch.float16 if torch.cuda.is_available() else None,
                     device_map="auto" if torch.cuda.is_available() else "cpu",
                     load_in_8bit=True if torch.cuda.is_available() else False
                 )
+                logger.info(f"[timer] HF base_model_load={time.perf_counter() - t0:.3f}s")
 
                 # Apply LoRA
+                t1 = time.perf_counter()
                 self.model = PeftModel.from_pretrained(base_model, self.model_path)
                 self.model.eval()
+                logger.info(f"[timer] HF peft_apply={time.perf_counter() - t1:.3f}s")
                 logger.info("Applied Transformers LoRA adapters successfully")
 
             else:
@@ -244,6 +260,7 @@ class FineTunedModelService:
                 if self.tokenizer.pad_token is None:
                     self.tokenizer.pad_token = self.tokenizer.eos_token
 
+                t0 = time.perf_counter()
                 self.model = AutoModelForCausalLM.from_pretrained(
                     self.model_path,
                     torch_dtype=torch.float16 if torch.cuda.is_available() else None,
@@ -251,10 +268,11 @@ class FineTunedModelService:
                     load_in_8bit=True if torch.cuda.is_available() else False
                 )
                 self.model.eval()
+                logger.info(f"[timer] HF base_dir_model_load={time.perf_counter() - t0:.3f}s")
             
             self.is_loaded = True
             self.using_mlx = False
-            logger.info("Fine-tuned model loaded successfully!")
+            logger.info(f"[timer] HF total_load={time.perf_counter() - t_load_start:.3f}s")
             
         except Exception as e:
             logger.error(f"Error loading fine-tuned model: {e}")
@@ -277,6 +295,7 @@ class FineTunedModelService:
     
     def predict(self, query: str, max_new_tokens: int = 5000) -> Dict:
         """Generate prediction for a natural language query with RAG context."""
+        t_predict_start = time.perf_counter()
         if not self.is_loaded:
             return {
                 "success": False,
@@ -286,11 +305,15 @@ class FineTunedModelService:
         
         try:
             # Extract travel context and gather RAG data
+            t0 = time.perf_counter()
             travel_context = self._extract_travel_context(query)
+            t1 = time.perf_counter()
             rag_data = self._gather_rag_data(query, travel_context)
+            t2 = time.perf_counter()
             
             # Build enhanced prompt with RAG context
             enhanced_prompt = self._build_enhanced_prompt(query, rag_data, travel_context)
+            t3 = time.perf_counter()
             
             use_mlx_env = os.getenv("USE_MLX", "false").lower() in {"1", "true", "yes"}
             use_mlx = (self.using_mlx or use_mlx_env) and MLX_AVAILABLE and self.model is not None and self.tokenizer is not None
@@ -309,6 +332,7 @@ class FineTunedModelService:
                 else:
                     stop_markers = ["\n###", "\nRESPONSE_JSON:", "```", "\nRecommendations", "\nSources"]
                 try:
+                    t_gen_start = time.perf_counter()
                     text = mlx_generate(
                         self.model,
                         self.tokenizer,
@@ -317,7 +341,9 @@ class FineTunedModelService:
                         stop=stop_markers,
                         verbose=False
                     )
+                    t_gen_end = time.perf_counter()
                 except TypeError:
+                    t_gen_start = time.perf_counter()
                     text = mlx_generate(
                         self.model,
                         self.tokenizer,
@@ -325,8 +351,17 @@ class FineTunedModelService:
                         max_tokens=safe_max_tokens,
                         verbose=False
                     )
+                    t_gen_end = time.perf_counter()
                 raw_response = text[len(prompt):].strip() if text.startswith(prompt) else text.strip()
                 response = self._sanitize_response_text(raw_response)
+                # Log the raw MLX output for observability
+                try:
+                    logger.info(f"[mlx_output] {response}")
+                except Exception:
+                    pass
+                logger.info(
+                    f"[timer] predict(MLX): extract={t1 - t0:.3f}s, gather_rag={t2 - t1:.3f}s, build_prompt={t3 - t2:.3f}s, generate={t_gen_end - t_gen_start:.3f}s, total={time.perf_counter() - t_predict_start:.3f}s"
+                )
                 return {
                     "success": True,
                     "response": response,
@@ -337,6 +372,7 @@ class FineTunedModelService:
             else:
                 # transformers path
                 prompt = enhanced_prompt
+                t_tok0 = time.perf_counter()
                 inputs = self.tokenizer(
                     prompt,
                     return_tensors="pt",
@@ -346,6 +382,7 @@ class FineTunedModelService:
                 if torch.cuda.is_available():
                     inputs = {k: v.cuda() for k, v in inputs.items()}
                 with torch.no_grad():
+                    t_gen_start = time.perf_counter()
                     outputs = self.model.generate(
                         **inputs,
                         max_new_tokens=safe_max_tokens,
@@ -356,9 +393,13 @@ class FineTunedModelService:
                         eos_token_id=self.tokenizer.eos_token_id,
                         use_cache=True
                     )
+                    t_gen_end = time.perf_counter()
                 full_response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
                 raw_response = full_response[len(prompt):].strip()
                 response = self._sanitize_response_text(raw_response)
+                logger.info(
+                    f"[timer] predict(HF): extract={t1 - t0:.3f}s, gather_rag={t2 - t1:.3f}s, build_prompt={t3 - t2:.3f}s, tokenize={t_tok0 - t3:.3f}s, generate={t_gen_end - t_gen_start:.3f}s, total={time.perf_counter() - t_predict_start:.3f}s"
+                )
                 return {
                     "success": True,
                     "response": response,

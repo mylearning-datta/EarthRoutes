@@ -1,0 +1,42 @@
+{
+  "prompts": {
+    "prompt_0": "### TASK: MODE_CHOICE\n### INSTRUCTION:\nChoose the most sustainable transport mode from Bangalore to Delhi.\n### RESPONSE:",
+    "prompt_1": "### TASK: SUSTAINABLE_POIS\n### INSTRUCTION:\nRecommend eco-friendly places in Kolkata.\n### RESPONSE:"
+  },
+  "gpt": {
+    "prompt_0": {
+      "time": 25.75,
+      "response": "### Travel Distance and CO2 Emissions\n- **Distance from Bangalore to Delhi**: 1739.8 km\n- **CO2 Emissions for Different Travel Modes**:\n  - **Bicycle**: 0.0 kg CO2 (4 days 19 hrs)\n  - **Walking**: 0.0 kg CO2 (14 days 11 hrs)\n  - **Electric Train**: 52.19 kg CO2 (21 hrs 45 mins)\n  - **Diesel Train**: 104.39 kg CO2 (21 hrs 45 mins)\n  - **Electric Car**: 121.79 kg CO2 (1 day 4 hrs)\n  - **Shared Bus**: 139.18 kg CO2 (1 day 10 hrs)\n  - **Petrol Car**: 269.67 kg CO2 (1 day 4 hrs)\n  - **Diesel Car**: 294.03 kg CO2 (1 day 4 hrs)\n  - **Flight**: 443.65 kg CO2 (5 hrs 29 mins)\n\n### Recommendations for Sustainable Transport Mode\n1. **Most Eco-Friendly Option**: \n   - **Bicycle**\n     - **CO2 Emissions**: 0.0 kg\n     - **Duration**: 4 days 19 hrs\n     - **Reasoning**: No emissions, promotes physical activity, and aligns with sustainable travel trends.\n\n2. **Alternative Eco-Friendly Option**:\n   - **Walking**\n     - **CO2 Emissions**: 0.0 kg\n     - **Duration**: 14 days 11 hrs\n     - **Reasoning**: Similar benefits as cycling, but requires more time.\n\n3. **Balanced Option**:\n   - **Electric Train**\n     - **CO2 Emissions**: 52.19 kg\n     - **Duration**: 21 hrs 45 mins\n     - **Reasoning**: Good balance between time and environmental impact.\n\n### Eco-Friendly Places to Visit in Delhi\n- **Akshardham Temple**\n  - **Type**: Temple\n  - **Rating**: 4.6\n  - **Significance**: Low energy usage, promotes passive and spiritual activities.\n  - **Entrance Fee**: ₹60\n  - **Best Time to Visit**: Afternoon\n\n- **Sunder Nursery**\n  - **Type**: Park\n  - **Rating**: 4.6\n  - **Significance**: Green space, carbon sequestration, low emissions.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Afternoon\n\n- **Lodhi Garden**\n  - **Type**: Park\n  - **Rating**: 4.5\n  - **Significance**: Green space, carbon sequestration, low emissions.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: All day\n\n- **Lotus Temple**\n  - **Type**: Temple\n  - **Rating**: 4.5\n  - **Significance**: Low energy usage, promotes passive and spiritual activities.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Evening\n\n- **Agrasen ki Baoli**\n  - **Type**: Stepwell\n  - **Rating**: 4.2\n  - **Significance**: Historic water-saving architecture.\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Afternoon\n\n### Conclusion\nFor the most sustainable travel experience from Bangalore to Delhi, consider cycling or walking, as both options have zero CO2 emissions. If you prefer a faster option, the electric train is a great choice with minimal environmental impact. Additionally, while in Delhi, visit eco-friendly attractions like Akshardham Temple and Sunder Nursery to enhance your sustainable travel experience.",
+      "ok": true
+    },
+    "prompt_1": {
+      "time": 54.921,
+      "response": "Here are some eco-friendly places to visit in Kolkata:\n\n- **Belur Math**\n  - **Type**: Religious Site\n  - **Google Review Rating**: 4.7\n  - **Sustainability Reason**: Often protected or minimal infrastructure (heritage)\n  - **Time Needed**: 1.5 hours\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Morning\n  - **Description**: A serene place known for its beautiful architecture and spiritual ambiance.\n\n- **Dakshineswar Kali Temple**\n  - **Type**: Temple\n  - **Google Review Rating**: 4.7\n  - **Sustainability Reason**: Low energy usage, promotes passive and spiritual activities\n  - **Time Needed**: 1 hour\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Morning\n  - **Description**: A famous temple dedicated to Goddess Kali, known for its spiritual significance and peaceful surroundings.\n\n- **Howrah Bridge**\n  - **Type**: Architectural Landmark\n  - **Google Review Rating**: 4.6\n  - **Sustainability Reason**: Typically pedestrian-friendly, minimal emissions\n  - **Time Needed**: 0.5 hours\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Anytime\n  - **Description**: An iconic symbol of Kolkata, this bridge is a marvel of engineering and offers stunning views of the Hooghly River.\n\n- **Kalighat Kali Temple**\n  - **Type**: Temple\n  - **Google Review Rating**: 4.4\n  - **Sustainability Reason**: Low energy usage, promotes passive and spiritual activities\n  - **Time Needed**: 1 hour\n  - **Entrance Fee**: Free\n  - **Best Time to Visit**: Morning\n  - **Description**: Another significant temple dedicated to Goddess Kali, known for its vibrant atmosphere and rituals.\n\nThese attractions not only offer a glimpse into the rich cultural heritage of Kolkata but also prioritize sustainability and eco-friendliness. Enjoy your visit while being mindful of the environment!",
+      "ok": true
+    }
+  },
+  "mistral_community": {
+    "prompt_0": {
+      "time": 120.004,
+      "response": "{\"error\": \"HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)\", \"url\": \"http://localhost:8000/api/chat/finetuned?variant=base_4bit\"}",
+      "ok": false
+    },
+    "prompt_1": {
+      "time": 57.608,
+      "response": "To explore eco-friendly places in Kolkata, consider visiting the following attractions:\n\n- **Belur Math**: A beautiful monastery and temple complex located on the banks of the Hooghly River. It is a spiritual and peaceful place with minimal infrastructure, making it an eco-friendly destination.\n- **Dakshineswar Kali Temple**: A famous temple dedicated to Goddess Kali. It is known for its tranquil atmosphere and low energy usage, making it an excellent choice for eco-conscious travelers.\n- **Howrah Bridge**: A iconic suspension bridge that connects Kolkata and Howrah. It is typically pedestrian-friendly and has minimal emissions, making it an eco-friendly way to explore the city.\n- **Kalighat Kali Temple**: A popular temple dedicated to Goddess Kali. It is known for its spiritual significance and promotes passive and spiritual activities, making it an eco-friendly destination.\n\nThese places offer unique experiences while minimizing their environmental impact. Enjoy your eco-friendly exploration of Kolkata!",
+      "ok": true
+    }
+  },
+  "mistral_finetuned": {
+    "prompt_0": {
+      "time": 120.005,
+      "response": "{\"error\": \"HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)\", \"url\": \"http://localhost:8000/api/chat/finetuned?variant=colab_finetune\"}",
+      "ok": false
+    },
+    "prompt_1": {
+      "time": 58.138,
+      "response": "To explore eco-friendly places in Kolkata, consider visiting the following attractions:\n\n- **Belur Math**: A beautiful monastery and temple complex located on the banks of the Hooghly River. It is a spiritual and peaceful place with minimal infrastructure, making it an eco-friendly destination.\n- **Dakshineswar Kali Temple**: A famous temple dedicated to Goddess Kali. It is known for its tranquil atmosphere and low energy usage, making it an excellent choice for eco-conscious travelers.\n- **Howrah Bridge**: A iconic suspension bridge that connects Kolkata and Howrah. It is typically pedestrian-friendly and has minimal emissions, making it an eco-friendly way to explore the city.\n- **Kalighat Kali Temple**: A popular temple dedicated to Goddess Kali. It is known for its spiritual significance and promotes passive and spiritual activities, making it an eco-friendly destination.\n\nThese places offer unique experiences while minimizing their environmental impact. Enjoy your eco-friendly exploration of Kolkata!",
+      "ok": true
+    }
+  }
+}

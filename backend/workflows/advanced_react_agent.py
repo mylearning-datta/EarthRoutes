@@ -14,6 +14,7 @@ from utils.postgres_database import postgres_db_manager
 import json
 import re
 from datetime import datetime
+import time
 
 # Module-level logger
 logger = logging.getLogger(__name__)
@@ -75,6 +76,7 @@ class AdvancedTravelPlanningTool(BaseTool):
     def _run(self, query: str) -> str:
         try:
             logger.info("Enter AdvancedTravelPlanningTool._run")
+            t_start = time.perf_counter()
             data = _safe_json_loads(query)
             source = data.get("source")
             destination = data.get("destination")
@@ -84,10 +86,14 @@ class AdvancedTravelPlanningTool(BaseTool):
                 return json.dumps({"error": "Source and destination are required"}, indent=2)
             
             # Get comprehensive travel data
+            t_tools0 = time.perf_counter()
             travel_data = travel_tools.get_travel_suggestions(source, destination)
+            t_tools1 = time.perf_counter()
             
             # Add reasoning and recommendations
+            t_an0 = time.perf_counter()
             analysis = self._analyze_travel_options(travel_data, preferences)
+            t_an1 = time.perf_counter()
             
             result = {
                 "travel_data": travel_data,
@@ -97,7 +103,9 @@ class AdvancedTravelPlanningTool(BaseTool):
             }
             
             output = json.dumps(result, indent=2)
-            logger.info("Exit AdvancedTravelPlanningTool._run")
+            logger.info(
+                f"[timer] AdvancedTravelPlanningTool._run: tools={t_tools1 - t_tools0:.3f}s, analyze={t_an1 - t_an0:.3f}s, total={time.perf_counter() - t_start:.3f}s"
+            )
             return output
                 
         except Exception as e:
@@ -107,6 +115,7 @@ class AdvancedTravelPlanningTool(BaseTool):
     def _analyze_travel_options(self, travel_data: Dict, preferences: Dict) -> Dict:
         """Enhanced analysis using semantic similarity and AI-powered recommendations"""
         logger.info("Enter AdvancedTravelPlanningTool._analyze_travel_options")
+        t_start = time.perf_counter()
         analysis = {
             "eco_friendly_ranking": [],
             "time_efficient_ranking": [],
@@ -129,10 +138,15 @@ class AdvancedTravelPlanningTool(BaseTool):
             analysis["time_efficient_ranking"] = sorted(options, key=lambda x: self._parse_duration(x.get("duration", 24)))
             
             # Enhanced AI-powered analysis
+            t_sem0 = time.perf_counter()
             analysis["semantic_ranking"] = self._semantic_travel_ranking(options, preferences)
+            t_sem1 = time.perf_counter()
             analysis["personalized_recommendations"] = self._generate_ai_recommendations(options, preferences)
+            t_sem2 = time.perf_counter()
             
-        logger.info("Exit AdvancedTravelPlanningTool._analyze_travel_options")
+        logger.info(
+            f"[timer] _analyze_travel_options: semantic_rank={t_sem1 - t_sem0 if 't_sem1' in locals() else 0.0:.3f}s, ai_recs={t_sem2 - t_sem1 if 't_sem2' in locals() else 0.0:.3f}s, total={time.perf_counter() - t_start:.3f}s"
+        )
         return analysis
     
     def _parse_duration(self, duration_str: str) -> float:
@@ -173,21 +187,28 @@ class AdvancedTravelPlanningTool(BaseTool):
         """Rank travel options using semantic similarity"""
         try:
             logger.info("Enter AdvancedTravelPlanningTool._semantic_travel_ranking")
+            t_start = time.perf_counter()
             # Create preference context for semantic matching
             preference_context = self._build_preference_context(preferences)
             
             # Generate embedding for user preferences
+            t_e0 = time.perf_counter()
             preference_embedding = vector_service.generate_query_embedding(preference_context)
+            t_e1 = time.perf_counter()
             
             if not preference_embedding:
                 return options  # Fallback to original order
             
             # Score each option based on semantic similarity
             scored_options = []
+            t_opt_embed = 0.0
             for option in options:
                 # Create option description for embedding
                 option_description = self._build_option_description(option)
+                t_oe0 = time.perf_counter()
                 option_embedding = vector_service.generate_query_embedding(option_description)
+                t_oe1 = time.perf_counter()
+                t_opt_embed += (t_oe1 - t_oe0)
                 
                 if option_embedding:
                     similarity = vector_service.calculate_similarity(preference_embedding, option_embedding)
@@ -201,7 +222,9 @@ class AdvancedTravelPlanningTool(BaseTool):
             
             # Sort by semantic similarity
             result = sorted(scored_options, key=lambda x: x["semantic_score"], reverse=True)
-            logger.info("Exit AdvancedTravelPlanningTool._semantic_travel_ranking")
+            logger.info(
+                f"[timer] _semantic_travel_ranking: pref_embed={t_e1 - t_e0:.3f}s, option_embeds_total={t_opt_embed:.3f}s, total={time.perf_counter() - t_start:.3f}s"
+            )
             return result
             
         except Exception as e:
@@ -324,21 +347,28 @@ class AdvancedTravelPlanningTool(BaseTool):
         """Find similar places and hotels in database for context"""
         try:
             logger.info("Enter AdvancedTravelPlanningTool._find_similar_database_items")
+            t_start = time.perf_counter()
             # Generate embedding for preference context
+            t_e0 = time.perf_counter()
             query_embedding = vector_service.generate_query_embedding(preference_context)
+            t_e1 = time.perf_counter()
             
             if not query_embedding:
                 return {"places": [], "hotels": []}
             
             # Search for similar items
+            t_db0 = time.perf_counter()
             similar_places = postgres_db_manager.search_similar_places(query_embedding, limit=5)
             similar_hotels = postgres_db_manager.search_similar_hotels(query_embedding, limit=5)
+            t_db1 = time.perf_counter()
             
             result = {
                 "places": similar_places,
                 "hotels": similar_hotels
             }
-            logger.info("Exit AdvancedTravelPlanningTool._find_similar_database_items")
+            logger.info(
+                f"[timer] _find_similar_database_items: embed={t_e1 - t_e0:.3f}s, db={t_db1 - t_db0:.3f}s, total={time.perf_counter() - t_start:.3f}s"
+            )
             return result
             
         except Exception as e:
@@ -347,6 +377,7 @@ class AdvancedTravelPlanningTool(BaseTool):
     
     def _analyze_option_with_ai(self, option: Dict, preferences: Dict, similar_items: Dict) -> str:
         """Analyze travel option using AI and database context"""
+        t_start = time.perf_counter()
         analysis_parts = []
         
         # Analyze based on similar items in database
@@ -367,7 +398,9 @@ class AdvancedTravelPlanningTool(BaseTool):
             elif duration_hours > 12:
                 analysis_parts.append("Leisurely travel experience")
         
-        return ". ".join(analysis_parts) + "." if analysis_parts else "Standard travel option."
+        result = ". ".join(analysis_parts) + "." if analysis_parts else "Standard travel option."
+        logger.info(f"[timer] _analyze_option_with_ai={time.perf_counter() - t_start:.3f}s")
+        return result
     
     def _calculate_personalization_score(self, option: Dict, preferences: Dict) -> float:
         """Calculate how well this option matches user preferences"""
@@ -767,6 +800,11 @@ class FineTunedServiceLLM(LLM):
                     idx = completion.find(observation_token)
                     if idx != -1:
                         completion = completion[:idx].rstrip()
+                except Exception:
+                    pass
+                # Log the generated MLX completion for debugging/inspection
+                try:
+                    logger.info(f"[mlx_output] {completion}")
                 except Exception:
                     pass
                 logger.info("Exit FineTunedServiceLLM._call (MLX path)")

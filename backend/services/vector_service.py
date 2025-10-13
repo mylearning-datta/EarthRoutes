@@ -8,6 +8,7 @@ import numpy as np
 from typing import List, Dict, Optional, Any
 from config.settings import settings
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +66,13 @@ class VectorEmbeddingService:
             if not text or not text.strip():
                 return None
             sanitized = self._sanitize_for_embedding(text)
+            t0 = time.perf_counter()
             response = self.openai_client.embeddings.create(
                 model=self.embedding_model,
                 input=sanitized,
                 dimensions=self.embedding_dimensions
             )
+            logger.info(f"[timer] embedding(single) time={time.perf_counter() - t0:.3f}s chars={len(sanitized)}")
             
             return response.data[0].embedding
         except Exception as e:
@@ -184,11 +187,13 @@ class VectorEmbeddingService:
             if not valid_texts:
                 return [None] * len(texts)
             
+            t0 = time.perf_counter()
             response = self.openai_client.embeddings.create(
                 model=self.embedding_model,
                 input=valid_texts,
                 dimensions=self.embedding_dimensions
             )
+            logger.info(f"[timer] embedding(batch) time={time.perf_counter() - t0:.3f}s count={len(valid_texts)}")
             
             # Map embeddings back to original list positions
             embeddings = [None] * len(texts)
