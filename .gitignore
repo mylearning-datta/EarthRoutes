@@ -77,7 +77,8 @@ tmp/
 *.tmp
 
 # Finetuning and model artifacts (large)
-finetuning/models/
+finetuning/models/mistral-7b-finetune-4bit-colab
+finetuning/models/mistral-7b-instruct-4bit-mlx
 finetuning/data/processed/
 data/model/
 project.tar.gz
