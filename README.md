@@ -121,7 +121,7 @@ Note: requires `OPENAI_API_KEY` in `backend/.env`.
 
 ---
 
-## 4) Download local MLX model (optional for on-device inference)
+## 4) Download local MLX model
 Install MLX requirements and download the quantized Mistral model to `finetuning/models/mistral-7b-instruct-4bit-mlx`.
 ```bash
 # From project root
