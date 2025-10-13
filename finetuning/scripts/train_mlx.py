@@ -14,6 +14,9 @@ import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 import subprocess
+import sys
+import re
+from typing import Iterable
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -191,14 +194,36 @@ def train_mlx_model_with_cli(
     ]
     
     print(f"Running MLX training command: {' '.join(cmd)}")
-    
+
+    # Stream output with progress updates
+    step_re = re.compile(r"(step|iter)[^0-9]*([0-9]+)\s*/\s*([0-9]+)", re.IGNORECASE)
     try:
-        # Run the training command
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        with subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        ) as proc:
+            current = 0
+            total = None
+            if proc.stdout is not None:
+                for line in proc.stdout:
+                    line = line.rstrip()
+                    print(line)
+                    m = step_re.search(line)
+                    if m:
+                        try:
+                            current = int(m.group(2))
+                            total = int(m.group(3))
+                            pct = (current / total * 100.0) if total else 0.0
+                            print(f"Progress: {current}/{total} ({pct:.1f}%)", flush=True)
+                        except Exception:
+                            pass
+            returncode = proc.wait()
+            if returncode != 0:
+                raise subprocess.CalledProcessError(returncode, cmd)
         print("Training completed successfully!")
-        print("STDOUT:", result.stdout)
-        if result.stderr:
-            print("STDERR:", result.stderr)
         
         # Save training config
         config = {
