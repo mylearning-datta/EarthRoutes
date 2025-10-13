@@ -121,7 +121,26 @@ Note: requires `OPENAI_API_KEY` in `backend/.env`.
 
 ---
 
-## 4) Run the backend
+## 4) Download local MLX model (optional for on-device inference)
+Install MLX requirements and download the quantized Mistral model to `finetuning/models/mistral-7b-instruct-4bit-mlx`.
+```bash
+# From project root
+source backend/venv/bin/activate
+pip install -r finetuning/requirements_mlx.txt
+
+# Download the model from Hugging Face (default repo + destination are set)
+python finetuning/scripts/download_mlx_model.py
+```
+You can customize the repo/destination if needed:
+```bash
+python finetuning/scripts/download_mlx_model.py \
+  --repo mistralai/Mistral-7B-Instruct-v0.2-4bit-mlx \
+  --dest finetuning/models/mistral-7b-instruct-4bit-mlx
+```
+
+---
+
+## 5) Run the backend
 ### Quick start (starts Postgres + backend + frontend)
 ```bash
 # From project root
