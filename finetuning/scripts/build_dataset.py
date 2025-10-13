@@ -25,6 +25,7 @@ import math
 import os
 import random
 from dataclasses import dataclass
+import subprocess
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -109,6 +110,18 @@ def write_jsonl(path: Path, records: Iterable[Dict]) -> None:
             f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
 
+def ensure_processed_inputs() -> None:
+    places_path = PROCESSED_DIR / "places.jsonl"
+    sust_idx_path = PROCESSED_DIR / "sustainability_index.json"
+    if places_path.exists() and sust_idx_path.exists():
+        return
+    # Run the extractor script to generate inputs
+    extract_script = PROJECT_ROOT / "finetuning" / "scripts" / "extract_facts.py"
+    if not extract_script.exists():
+        raise FileNotFoundError(f"Missing extractor script: {extract_script}")
+    subprocess.run([sys.executable, str(extract_script)], check=True, cwd=str(PROJECT_ROOT))
+
+
 def load_emission_factors() -> Dict[str, float]:
     # Prefer backend service factors; fallback to assets file if present
     co2 = CO2EmissionService()
@@ -154,9 +167,10 @@ def feasible_modes_for_distance(distance_km: float) -> List[str]:
 
 def build_mode_choice(max_examples: int = 1000, seed: int = 42) -> List[Dict]:
     random.seed(seed)
+    ensure_processed_inputs()
     places = read_jsonl(PROCESSED_DIR / "places.jsonl")
     if not places:
-        print("No places.jsonl found. Run extract_facts.py first.")
+        print("No places found after generation; check CSVs under data/.")
         return []
 
     # Gather unique cities with a few representatives
@@ -235,9 +249,10 @@ def build_mode_choice(max_examples: int = 1000, seed: int = 42) -> List[Dict]:
 
 
 def build_sustainable_pois(max_examples_per_city: int = 1) -> List[Dict]:
+    ensure_processed_inputs()
     places = read_jsonl(PROCESSED_DIR / "places.jsonl")
     if not places:
-        print("No places.jsonl found. Run extract_facts.py first.")
+        print("No places found after generation; check CSVs under data/.")
         return []
 
     # Group sustainable POIs by city
@@ -312,6 +327,7 @@ def build_sustainable_pois(max_examples_per_city: int = 1) -> List[Dict]:
 
 def main() -> None:
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_processed_inputs()
 
     mode_choice = build_mode_choice(max_examples=500)
     sustainable_pois = build_sustainable_pois()
