@@ -50,6 +50,26 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+Windows (PowerShell):
+```powershell
+cd backend
+py -m venv venv
+venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Note: Each new terminal session, activate the environment first:
+```bash
+# macOS/Linux
+source backend/venv/bin/activate
+# Windows (PowerShell)
+backend\venv\Scripts\Activate.ps1
+```
+Deactivate anytime with:
+```bash
+deactivate
+```
 Create your environment file if missing:
 ```bash
 cp env.example .env
@@ -77,10 +97,6 @@ This creates tables (`hotels`, `places`, `cities`), clears existing rows, loads 
 ### Populate vector embeddings (recommended)
 Populate embeddings so semantic search and recommendations work:
 ```bash
-# Standard (synchronous) path
-python backend/scripts/populate_embeddings.py
-
-# Or use Batch API for large datasets
 python backend/scripts/populate_embeddings_batch.py
 ```
 Note: requires `OPENAI_API_KEY` in `backend/.env`.
