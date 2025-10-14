@@ -1,13 +1,13 @@
 # POIs EDA
 
 ## Analysis 1: Schema and coverage
-Rows: 325. Airport within 50km available for ~69.8% of POIs.
-Top types: Temple (59), Beach (25), Fort (22), Lake (16), National Park (14), Palace (12), Museum (11), Waterfall (11), Monument (9), Cave (8), Park (7), Zoo (7), Mall (7), Valley (7), Monastery (7).
+We have 325 places in our dataset. About 70% of these places have an airport within 50km.
+The most common types are: Temples (59), Beaches (25), Forts (22), Lakes (16), National Parks (14), Palaces (12), Museums (11), Waterfalls (11), Monuments (9), Caves (8), Parks (7), Zoos (7), Malls (7), Valleys (7), and Monasteries (7).
 
 ### Why this matters for EarthRoutes
-- Airport availability gates mode‑choice comparisons; where absent, avoid proposing flights and focus on rail/road.
-- The city/type inventory powers eco‑alternative suggestions when users request higher‑impact types.
-- Geospatial readiness: use airport flag to decide flight comparisons; where absent, bias toward walkable clusters of sustainable POIs.
+- When there's no nearby airport, we can skip flight options and recommend trains or buses instead.
+- Knowing what types of places exist in each city helps us suggest eco-friendly alternatives when travelers ask for less sustainable options.
+- We can use airport proximity to decide when to offer flight comparisons, and when a place has no airport, we focus on recommending clusters of sustainable attractions that are easy to walk between.
 
 ### Figure: Top POI types by count
 ![Schema and coverage](eda/figures/pois_type_counts.png)

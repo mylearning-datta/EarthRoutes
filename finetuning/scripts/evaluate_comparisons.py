@@ -155,6 +155,21 @@ def extract_places_from_response(resp: str, top_k: int = 5) -> List[str]:
         "location",
         "opening hours",
     }
+    
+    # Phrases that indicate this is not a place name
+    stop_phrases = {
+        "these places",
+        "visit early",
+        "plan for",
+        "enjoy your",
+        "these recommendations",
+        "offer unique",
+        "contribute less",
+        "environmental degradation",
+        "compared to other",
+        "attractions",
+    }
+    
     lines = resp.splitlines()
 
     # 1) Bolded names (common style: **Name**)
@@ -164,6 +179,11 @@ def extract_places_from_response(resp: str, top_k: int = 5) -> List[str]:
             if not cand:
                 continue
             if cand.lower() in stop_labels:
+                continue
+            # Skip if it's a long sentence (>6 words) or contains stop phrases
+            if len(cand.split()) > 6:
+                continue
+            if any(phrase in cand.lower() for phrase in stop_phrases):
                 continue
             places.append(cand)
 
@@ -182,8 +202,13 @@ def extract_places_from_response(resp: str, top_k: int = 5) -> List[str]:
                 continue
             if item.lower() in stop_labels:
                 continue
+            # Skip long sentences or those with stop phrases
+            if len(item.split()) > 6:
+                continue
+            if any(phrase in item.lower() for phrase in stop_phrases):
+                continue
             # discard bullets that start with common non-name phrases
-            if re.match(r"^(i'm sorry|if you're interested|to reach|here (are|is)|bulleted points)\b", item, flags=re.I):
+            if re.match(r"^(i'm sorry|if you're interested|to reach|here (are|is)|bulleted points|these places|for more information)\b", item, flags=re.I):
                 continue
             # discard known lead-in phrases that appear as pseudo-names
             if re.match(r"^for eco(\s|-)?friendly\b", item, flags=re.I) or re.match(r"^for eco\b", item, flags=re.I):
@@ -194,8 +219,12 @@ def extract_places_from_response(resp: str, top_k: int = 5) -> List[str]:
     if not places:
         for m in re.finditer(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b", resp):
             cand = m.group(1)
-            if len(cand.split()) >= 2:  # prefer multi-word
-                places.append(_clean_place_name(cand))
+            if len(cand.split()) >= 2 and len(cand.split()) <= 5:  # prefer multi-word but not too long
+                cleaned = _clean_place_name(cand)
+                # Skip if contains stop phrases
+                if any(phrase in cleaned.lower() for phrase in stop_phrases):
+                    continue
+                places.append(cleaned)
 
     # Deduplicate keeping order
     seen: Set[str] = set()

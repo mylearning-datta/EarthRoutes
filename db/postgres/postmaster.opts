@@ -1,1 +1,1 @@
-/opt/homebrew/Cellar/postgresql@14/14.19/bin/postgres "-D" "/Users/arpita/Documents/project/db/postgres" "-c" "config_file=/Users/arpita/Documents/project/db/postgres/postgresql.conf"
+/opt/homebrew/Cellar/postgresql@14/14.19/bin/postgres "-D" "/Users/arpita/Documents/test/db/postgres" "-c" "config_file=/Users/arpita/Documents/test/db/postgres/postgresql.conf"

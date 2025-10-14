@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Download MLX model from Hugging Face")
     parser.add_argument(
         "--repo",
-        default="mistralai/Mistral-7B-Instruct-v0.2-4bit-mlx",
+        default="mlx-community/Mistral-7B-Instruct-v0.2-4bit",
         help="Hugging Face repo id to download",
     )
     parser.add_argument(
