@@ -1,22 +1,20 @@
 # POIs EDA
 
-## Analysis 1: Schema and coverage
-We have 325 places in our dataset. About 70% of these places have an airport within 50km.
-The most common types are: Temples (59), Beaches (25), Forts (22), Lakes (16), National Parks (14), Palaces (12), Museums (11), Waterfalls (11), Monuments (9), Caves (8), Parks (7), Zoos (7), Malls (7), Valleys (7), and Monasteries (7).
+## Schema and coverage
+Rows: 325. Airport within 50km available for ~69.8% of POIs.
+Top types: Temple (59), Beach (25), Fort (22), Lake (16), National Park (14), Palace (12), Museum (11), Waterfall (11), Monument (9), Cave (8), Park (7), Zoo (7), Valley (7), Monastery (7), Mall (7).
 
 ### Why this matters for EarthRoutes
 - When there's no nearby airport, we can skip flight options and recommend trains or buses instead.
 - Knowing what types of places exist in each city helps us suggest eco-friendly alternatives when travelers ask for less sustainable options.
 - We can use airport proximity to decide when to offer flight comparisons, and when a place has no airport, we focus on recommending clusters of sustainable attractions that are easy to walk between.
 
-### Figure: Top POI types by count
-![Schema and coverage](eda/figures/pois_type_counts.png)
+<figure style="text-align: center;">
+<img src="eda/figures/pois_type_counts.png" alt="Schema and coverage" style="max-width: 100%; width: 720px; height: auto;" />
+<figcaption><em>Figure: Type coverage shows strong representation for Temples/Forts and a healthy base of nature types to power eco alternatives.</em></figcaption>
+</figure>
 
-_Figure: Type coverage shows strong representation for Temples/Forts and a healthy base of nature types to power eco alternatives._
-
----
-
-## Analysis 2: Experience vs price
+## Experience vs price
 Ratings cluster between 4.3–4.7 across popular types; fees show wide spread.
 Price-for-quality outliers can be highlighted for itinerary planning.
 
@@ -25,17 +23,15 @@ Price-for-quality outliers can be highlighted for itinerary planning.
 - Use a simple value signal (rating high, fee low, sustainable) to order alternatives; surface fee context in explanations.
 - Itinerary feasibility: pair time‑needed with type to balance day plans, preferring clusters of short, sustainable visits when time is constrained.
 
-### Figure: Ratings distribution by top POI types
-![Experience vs price](eda/figures/pois_ratings_by_type.png)
+<figure style="text-align: center;">
+<img src="eda/figures/pois_ratings_by_type.png" alt="Experience vs price" style="max-width: 100%; width: 720px; height: auto;" />
+<figcaption><em>Figure: Across top types, user satisfaction is high and tight—suggesting room to optimize for sustainability and cost without losing quality.</em></figcaption>
+</figure>
 
-_Figure: Across top types, user satisfaction is high and tight—suggesting room to optimize for sustainability and cost without losing quality._
-
-### Figure: Entrance fee vs rating scatter
-![Experience vs price](eda/figures/pois_fee_vs_rating.png)
-
-_Figure: Low-fee, high-rating points are ideal anchors for low-CO₂ days; expensive outliers warrant explicit justification._
-
----
+<figure style="text-align: center;">
+<img src="eda/figures/pois_fee_vs_rating.png" alt="Experience vs price" style="max-width: 100%; width: 720px; height: auto;" />
+<figcaption><em>Figure: Low-fee, high-rating points are ideal anchors for low-CO₂ days; expensive outliers warrant explicit justification.</em></figcaption>
+</figure>
 
 ## Cross‑cutting implications
 - Retrieval: normalize Type/Zone/booleans; keep a curated list of sustainable types per city to enable alternatives.

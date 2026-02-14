@@ -62,9 +62,25 @@ def run() -> None:
     fig1, ax1 = plt.subplots(figsize=(8, 5))
     type_counts = df["Type_norm"].value_counts().head(15)
     type_counts.plot(kind="bar", color="#4e79a7", ax=ax1)
+    # Add value labels on bars for readability in reports
+    for patch in ax1.patches:
+        height = patch.get_height()
+        if height is None or np.isnan(height):
+            continue
+        ax1.annotate(
+            f"{int(height)}",
+            (patch.get_x() + patch.get_width() / 2, height),
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            xytext=(0, 3),
+            textcoords="offset points",
+        )
     ax1.set_xlabel("Type")
     ax1.set_ylabel("Count")
     ax1.set_title("POI types (top 15)")
+    ax1.set_ylim(0, max(type_counts.max() * 1.12, type_counts.max() + 1))
+    fig1.tight_layout()
     f1 = figures_dir / "pois_type_counts.png"
     save_figure(fig1, f1)
     plt.close(fig1)

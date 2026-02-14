@@ -21,6 +21,22 @@ def save_figure(fig, output_path: Path) -> None:
     fig.savefig(output_path, bbox_inches="tight", dpi=200)
     
 
+def _figure_html(image_rel: str, alt: str, caption: str | None = None, width_px: int = 720) -> list[str]:
+    """
+    Render a centered figure block for Markdown reports.
+    Many Markdown renderers left-align images by default; HTML ensures consistent alignment.
+    """
+    lines: list[str] = []
+    lines.append("<figure style=\"text-align: center;\">")
+    lines.append(
+        f"<img src=\"{image_rel}\" alt=\"{alt}\" style=\"max-width: 100%; width: {width_px}px; height: auto;\" />"
+    )
+    if caption:
+        lines.append(f"<figcaption><em>Figure: {caption}</em></figcaption>")
+    lines.append("</figure>")
+    return lines
+
+
 def write_markdown(output_path: Path, title: str, sections: list[dict]) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     lines: list[str] = [f"# {title}", ""]
@@ -34,11 +50,9 @@ def write_markdown(output_path: Path, title: str, sections: list[dict]) -> None:
         if content:
             lines.extend([content, ""]) 
         for idx, image_rel in enumerate(images):
-            lines.append(f"![{heading}]({image_rel})")
-            # Optional human-written caption under the figure
-            if idx < len(image_captions) and image_captions[idx]:
-                lines.append("")
-                lines.append(f"_Figure: {image_captions[idx]}_")
+            caption = image_captions[idx] if idx < len(image_captions) else ""
+            alt = str(heading or "Figure")
+            lines.extend(_figure_html(image_rel=image_rel, alt=alt, caption=caption or None))
             lines.append("")
     output_path.write_text("\n".join(lines), encoding="utf-8")
 

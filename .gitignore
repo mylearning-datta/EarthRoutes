@@ -27,6 +27,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv-eda/
+.mplconfig/
 
 # Environment variables
 .env
@@ -34,6 +36,7 @@ venv.bak/
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env copy
 
 # IDE
 .vscode/

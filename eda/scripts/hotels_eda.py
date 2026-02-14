@@ -67,10 +67,36 @@ def run() -> None:
 
     # Figures
     fig1, ax1 = plt.subplots(figsize=(7, 4))
-    ax1.hist(df["Rating_num"].dropna(), bins=np.arange(0, 10.5, 0.5), color="#4e79a7")
+    rating_series = df["Rating_num"]
+    rating_clean = rating_series.dropna()
+    ax1.hist(rating_clean, bins=np.arange(0, 10.5, 0.5), color="#4e79a7")
     ax1.set_xlabel("Hotel rating (0–10)")
     ax1.set_ylabel("Count")
     ax1.set_title("Distribution of hotel ratings")
+    # Add compact summary stats directly on the figure
+    n_total = int(len(rating_series))
+    n_valid = int(rating_clean.shape[0])
+    n_missing = n_total - n_valid
+    missing_pct = (n_missing / n_total * 100.0) if n_total else 0.0
+    mean_rating = float(rating_clean.mean()) if n_valid else float("nan")
+    median_rating = float(rating_clean.median()) if n_valid else float("nan")
+
+    if n_valid:
+        ax1.axvline(mean_rating, color="#f28e2b", linewidth=1.5, label=f"Mean: {mean_rating:.2f}")
+        ax1.axvline(median_rating, color="#59a14f", linewidth=1.5, linestyle="--", label=f"Median: {median_rating:.2f}")
+        ax1.legend(loc="upper left", frameon=False, fontsize=9)
+
+    ax1.text(
+        0.98,
+        0.98,
+        f"Total: {n_total}\nValid: {n_valid}\nMissing: {n_missing} ({missing_pct:.1f}%)",
+        transform=ax1.transAxes,
+        ha="right",
+        va="top",
+        fontsize=9,
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="none"),
+    )
+    fig1.tight_layout()
     f1 = figures_dir / "hotels_rating_hist.png"
     save_figure(fig1, f1)
     plt.close(fig1)
@@ -93,9 +119,25 @@ def run() -> None:
         df["Condition_norm"].replace({"": "Unknown"}).value_counts().head(12)
     )
     cond_counts.plot(kind="bar", color="#59a14f", ax=ax3)
+    # Add value labels on bars for readability in reports
+    for patch in ax3.patches:
+        height = patch.get_height()
+        if height is None or np.isnan(height):
+            continue
+        ax3.annotate(
+            f"{int(height)}",
+            (patch.get_x() + patch.get_width() / 2, height),
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            xytext=(0, 3),
+            textcoords="offset points",
+        )
     ax3.set_xlabel("Condition label")
     ax3.set_ylabel("Count")
     ax3.set_title("Hotel condition labels (top)")
+    ax3.set_ylim(0, max(cond_counts.max() * 1.12, cond_counts.max() + 1))
+    fig3.tight_layout()
     f3 = figures_dir / "hotels_condition_counts.png"
     save_figure(fig3, f3)
     plt.close(fig3)
